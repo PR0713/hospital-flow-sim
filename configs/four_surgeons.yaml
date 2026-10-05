@@ -1,0 +1,88 @@
+# example_hospital.yaml with a fourth surgeon, so two surgeries can overlap.
+# Team choice matters here: pairing the two seniors leaves nobody to lead a
+# second surgery, while pairing each senior with a junior runs two at once.
+# Times are in minutes. Durations are illustrative, not fitted to data.
+name: four_surgeons
+time_unit: minute
+
+roles:
+  - {name: Nurse, kind: staff}
+  - {name: LabTechnician, kind: staff}
+  - {name: Radiographer, kind: staff}
+  - {name: LeadSurgeon, kind: staff}
+  - {name: AssistantSurgeon, kind: staff}
+  - {name: Anaesthetist, kind: staff}
+  - {name: OperatingRoom, kind: room}
+  - {name: RecoveryRoom, kind: room}
+  - {name: ScanRoom, kind: room}
+  - {name: LabAnalyzer, kind: equipment}
+
+resources:
+  - {roles: [Nurse], count: 6}                    # nurse_1 .. nurse_6
+  - {roles: [LabTechnician], id: labtech, count: 2}
+  - {roles: [Radiographer], count: 1}
+  # Two seniors who can lead or assist, and two juniors who can only assist.
+  - {id: surgeon_senior, roles: [LeadSurgeon, AssistantSurgeon], count: 2}
+  - {id: surgeon_junior, roles: [AssistantSurgeon], count: 2}
+  - {roles: [Anaesthetist], count: 2}
+  - {roles: [OperatingRoom], id: or, count: 2}
+  - {roles: [RecoveryRoom], id: recovery_bay, count: 3}
+  - {roles: [ScanRoom], id: scan_room, count: 1}
+  - {roles: [LabAnalyzer], id: analyzer, count: 2}
+
+operation_types:
+  - name: BloodDraw
+    requirements: [{role: Nurse}]
+    duration: {mean: 10, cv: 0.3}
+  - name: LabAnalysis
+    requirements: [{role: LabTechnician}, {role: LabAnalyzer}]
+    duration: {mean: 30, cv: 0.4}
+    requires_patient: false          # runs on the sample; the patient is free
+  - name: XRay
+    requirements: [{role: ScanRoom}, {role: Radiographer}]
+    duration: {mean: 15, cv: 0.3}
+  - name: CTScan
+    requirements: [{role: ScanRoom}, {role: Radiographer}]
+    duration: {mean: 30, cv: 0.4}
+  - name: AnaestheticReview
+    requirements: [{role: Anaesthetist}]
+    duration: {mean: 15, cv: 0.3}
+  - name: PreOpPrep
+    requirements: [{role: Nurse}]
+    duration: {mean: 20, cv: 0.3}
+  - name: Surgery
+    requirements:
+      - {role: OperatingRoom}
+      - {role: LeadSurgeon}
+      - {role: AssistantSurgeon}
+      - {role: Anaesthetist}
+      - {role: Nurse, quantity: 2}
+    duration: {mean: 90, cv: 0.5}
+  - name: Recovery
+    requirements: [{role: RecoveryRoom}, {role: Nurse}]
+    duration: {distribution: gamma, mean: 60, cv: 0.3}
+
+pathways:
+  - name: surgical
+    steps:
+      - {id: blood_draw, op_type: BloodDraw}
+      - {id: lab, op_type: LabAnalysis, after: [blood_draw]}
+      # Exactly one imaging modality per patient.
+      - {id: xray, op_type: XRay, branch_group: imaging, branch_weight: 0.7}
+      - {id: ct, op_type: CTScan, branch_group: imaging, branch_weight: 0.3}
+      # Needed for 60% of patients; when skipped, pre-op follows lab directly.
+      - {id: anaesthetic_review, op_type: AnaestheticReview, after: [lab], probability: 0.6}
+      - {id: pre_op, op_type: PreOpPrep, after: [anaesthetic_review, xray, ct]}
+      - {id: surgery, op_type: Surgery, after: [pre_op]}
+      - {id: recovery, op_type: Recovery, after: [surgery]}
+  - name: diagnostic
+    steps:
+      - {id: blood_draw, op_type: BloodDraw}
+      - {id: lab, op_type: LabAnalysis, after: [blood_draw]}
+      - {id: xray, op_type: XRay}
+      - {id: ct, op_type: CTScan, after: [xray], probability: 0.25}
+
+arrivals:
+  kind: static
+  n_patients: 10
+  pathway_mix: {surgical: 0.6, diagnostic: 0.4}

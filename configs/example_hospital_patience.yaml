@@ -1,0 +1,162 @@
+# example_hospital_full.yaml changed so that leaving is a real part of the
+# problem: twice as many walk-in patients, four nurses instead of six, and a
+# mean patience of 20 minutes. Under FIFO about 2 of 16 walk-ins give up
+# before anyone sees them; better dispatching roughly halves that.
+# Use it to study leaving and the leave penalty. Elective and urgent patients
+# do not leave. All numbers are illustrative.
+name: example_hospital_patience
+time_unit: minute
+
+roles:
+  - {name: Nurse, kind: staff}
+  - {name: LabTechnician, kind: staff}
+  - {name: Radiographer, kind: staff}
+  - {name: LeadSurgeon, kind: staff}
+  - {name: AssistantSurgeon, kind: staff}
+  - {name: Anaesthetist, kind: staff}
+  - {name: OperatingRoom, kind: room}
+  - {name: RecoveryRoom, kind: room}
+  - {name: ScanRoom, kind: room}
+  - {name: LabAnalyzer, kind: equipment}
+  - {name: ICUBed, kind: room}
+
+calendars:
+  # Two nurse rosters on a 12-hour day, with staggered 30-minute breaks.
+  # Work not finished by minute 720 waits for the next day.
+  - name: nurses_early_break
+    period: 1440
+    shifts: [{start: 0, end: 720}]
+    breaks: [{start: 240, duration: 30}]
+    absence_probability: 0.05
+  - name: nurses_late_break
+    period: 1440
+    shifts: [{start: 0, end: 720}]
+    breaks: [{start: 300, duration: 30}]
+    absence_probability: 0.05
+
+resources:
+  - {roles: [Nurse], id: nurse_a, count: 2, calendar: nurses_early_break}
+  - {roles: [Nurse], id: nurse_b, count: 2, calendar: nurses_late_break}
+  - {roles: [LabTechnician], id: labtech, count: 2}
+  - {roles: [Radiographer], count: 1}
+  # The seniors operate 20% faster than the reference; the junior 15% slower.
+  - {id: surgeon_senior, roles: [LeadSurgeon, AssistantSurgeon], count: 2, attributes: {speed: 1.2}}
+  - {id: surgeon_junior, roles: [LeadSurgeon, AssistantSurgeon], attributes: {speed: 0.85}}
+  - {roles: [Anaesthetist], count: 2}
+  - {roles: [OperatingRoom], id: or, count: 2}
+  - {roles: [RecoveryRoom], id: recovery_bay, count: 3}
+  - {roles: [ScanRoom], id: scan_room, count: 1, breakdown: {mtbf: 2000, mttr: 45}}
+  - {roles: [LabAnalyzer], id: analyzer, count: 2}
+  - {roles: [ICUBed], id: icu_bed, count: 2}
+
+operation_types:
+  - name: BloodDraw
+    requirements: [{role: Nurse}]
+    duration: {mean: 10, cv: 0.3}
+  - name: LabAnalysis
+    requirements: [{role: LabTechnician}, {role: LabAnalyzer}]
+    duration: {mean: 30, cv: 0.4}
+    requires_patient: false
+  - name: ResultTurnaround          # pure delay: validation and reporting
+    duration: {mean: 15, cv: 0.5}
+    requires_patient: false
+  - name: XRay
+    requirements: [{role: ScanRoom}, {role: Radiographer}]
+    duration: {mean: 15, cv: 0.3}
+    overrides:
+      - when: {acuity_class: 2}       # complex patients are harder to position
+        duration_scale: 1.3
+  - name: CTScan
+    requirements: [{role: ScanRoom}, {role: Radiographer}]
+    duration: {mean: 30, cv: 0.4}
+  - name: AnaestheticReview
+    requirements: [{role: Anaesthetist}]
+    duration: {mean: 15, cv: 0.3}
+  - name: PreOpPrep
+    requirements: [{role: Nurse}]
+    duration: {mean: 20, cv: 0.3}
+  - name: Surgery
+    requirements:
+      - {role: OperatingRoom}
+      - {role: LeadSurgeon}
+      - {role: AssistantSurgeon}
+      - {role: Anaesthetist}
+      - {role: Nurse, quantity: 2}
+    # Never under 30 minutes; 8% of cases hit a complication and take 2.5x.
+    duration: {mean: 80, cv: 0.4, shift: 30, complication: {probability: 0.08, multiplier: 2.5}}
+    speed_roles: [LeadSurgeon]
+    turnover: {OperatingRoom: 15}    # cleaning before the next case
+    overrides:
+      - when: {patient_class: urgent} # emergency surgery: a third nurse
+        requirements:
+          - {role: OperatingRoom}
+          - {role: LeadSurgeon}
+          - {role: AssistantSurgeon}
+          - {role: Anaesthetist}
+          - {role: Nurse, quantity: 3}
+      - when: {acuity_class: 2}
+        duration_scale: 1.25
+  - name: Recovery
+    requirements: [{role: RecoveryRoom}, {role: Nurse}]
+    duration: {distribution: gamma, mean: 60, cv: 0.3}
+  - name: IntensiveCare
+    requirements: [{role: ICUBed}, {role: Nurse}]
+    duration: {distribution: loglogistic, mean: 120, tail_index: 3.0}
+
+pathways:
+  - name: surgical
+    steps:
+      - {id: blood_draw, op_type: BloodDraw}
+      - {id: lab, op_type: LabAnalysis, after: [blood_draw]}
+      - {id: result, op_type: ResultTurnaround, after: [lab]}
+      # A poor image means a repeat, discovered only when the scan is done.
+      - {id: xray, op_type: XRay, branch_group: imaging, branch_weight: 0.7, repeat: {probability: 0.15, max: 2}}
+      - {id: ct, op_type: CTScan, branch_group: imaging, branch_weight: 0.3}
+      - {id: anaesthetic_review, op_type: AnaestheticReview, after: [result], probability: 0.6}
+      - {id: pre_op, op_type: PreOpPrep, after: [anaesthetic_review, xray, ct]}
+      - {id: surgery, op_type: Surgery, after: [pre_op]}
+      # One surgery in eight needs intensive care first; nobody knows which
+      # until the surgery is over.
+      - {id: icu, op_type: IntensiveCare, after: [surgery], probability: 0.125, revealed_by: surgery}
+      - {id: recovery, op_type: Recovery, after: [surgery, icu]}
+  - name: diagnostic
+    steps:
+      - {id: blood_draw, op_type: BloodDraw}
+      - {id: lab, op_type: LabAnalysis, after: [blood_draw]}
+      - {id: result, op_type: ResultTurnaround, after: [lab]}
+      - {id: xray, op_type: XRay, repeat: {probability: 0.15, max: 2}}
+      # The X-ray decides whether a CT is needed.
+      - {id: ct, op_type: CTScan, after: [xray], probability: 0.25, revealed_by: xray}
+  - name: emergency_surgery
+    steps:
+      - {id: ct, op_type: CTScan}
+      - {id: pre_op, op_type: PreOpPrep, after: [ct]}
+      - {id: surgery, op_type: Surgery, after: [pre_op]}
+      - {id: recovery, op_type: Recovery, after: [surgery]}
+
+arrivals:
+  - name: elective                  # booked surgical list, one every 40 minutes
+    kind: scheduled
+    n_patients: 6
+    appointments: {start: 0, interval: 40, punctuality_sd: 8, no_show_probability: 0.08, no_show_timeout: 30}
+    pathway_mix: {surgical: 1.0}
+  - name: walk_in                   # diagnostic patients who may give up waiting
+    kind: poisson
+    horizon: 360
+    rate_profile: {period: 360, rates: [0.06, 0.06, 0.05, 0.04, 0.03, 0.02]}
+    batch_mean: 1.5
+    patience: {mean: 20, cv: 0.6}
+    pathway_mix: {diagnostic: 1.0}
+  - name: urgent
+    kind: poisson
+    horizon: 360
+    rate: 0.003
+    weight: 5.0
+    urgent: true
+    pathway_mix: {emergency_surgery: 1.0}
+
+complexity:
+  rho: 0.4                          # complex patients are slow at everything
+  acuity_classes: 3                 # visible at arrival
+  acuity_correlation: 0.7           # ...but only a noisy reading of the truth
+  reveal_correlation: 0.5           # complex patients get the complications

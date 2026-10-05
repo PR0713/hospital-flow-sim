@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+
+# PDFs, research papers and anything derived from them (extracted text,
+# notes, excerpts, bibliography dumps, paper-specific data) are never committed.
+*.pdf
+docs/papers/
+docs/paper_notes/
+docs/PAPER_COMPARISON.md
+*.bib
+*.raw.txt
