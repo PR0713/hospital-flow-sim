@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "hospital-sim": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "hospital_sim_mcp.server"]
+    }
+  }
+}

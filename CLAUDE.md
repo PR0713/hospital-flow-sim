@@ -49,6 +49,10 @@ Layers, bottom to top (each depends only on the layers listed before it):
 
 `configs/example_hospital_dynamic.yaml` is the main development target. `example_hospital.yaml` is a smoke-test only: every allocation rule gives identical results there, so it cannot separate good policies from bad. Baselines worth beating: `urgent_first`, `weight_aware`, `acuity_aware` (FIFO is no better than random on the weighted objective). New hospitals are YAML only; see `docs/CONFIG_GUIDE.md`.
 
+## Agent layer (branch `agent-layer`)
+
+`src/hospital_sim_mcp/` wraps `HospitalEnv` as an MCP server (`.mcp.json` registers it as `hospital-sim`; run manually with `.venv/bin/python -m hospital_sim_mcp.server`). `session.py` holds all logic with no MCP imports (tests: `tests/test_mcp_session.py`); `server.py` is a thin FastMCP wrapper. Everything shown to the LLM is built from the public observation arrays, never from `sim.instance.hidden`. The core packages (`domain`, `generators`, `sim`, `env`, `baselines`, `eval`) are deliberately left unmodified on this branch; keep it that way unless asked.
+
 ## Docs
 
 `docs/RL_INTEGRATION.md` (start here to plug in an agent), `docs/ENV_API.md` (actions, masks, observation fields, seeds), `docs/CONFIG_GUIDE.md`, `docs/BASELINE_RESULTS.md`, `docs/ASSUMPTIONS.md`.
