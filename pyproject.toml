@@ -20,6 +20,8 @@ dependencies = [
 plot = ["matplotlib>=3.8"]
 # LLM-agent layer: MCP server (src/hospital_sim_mcp)
 mcp = ["mcp>=1.2,<2"]
+# LLM agent (src/hospital_sim_agents)
+llm = ["anthropic>=1.0"]
 dev = [
     "matplotlib>=3.8",
     "scipy-stubs",
@@ -28,6 +30,7 @@ dev = [
     "mypy>=1.10",
     "types-PyYAML",
     "mcp>=1.2,<2",
+    "anthropic>=1.0",
 ]
 
 [tool.setuptools.packages.find]

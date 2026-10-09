@@ -53,6 +53,8 @@ Layers, bottom to top (each depends only on the layers listed before it):
 
 `src/hospital_sim_mcp/` wraps `HospitalEnv` as an MCP server (`.mcp.json` registers it as `hospital-sim`; run manually with `.venv/bin/python -m hospital_sim_mcp.server`). `session.py` holds all logic with no MCP imports (tests: `tests/test_mcp_session.py`); `server.py` is a thin FastMCP wrapper. Everything shown to the LLM is built from the public observation arrays, never from `sim.instance.hidden`. The core packages (`domain`, `generators`, `sim`, `env`, `baselines`, `eval`) are deliberately left unmodified on this branch; keep it that way unless asked.
 
+`src/hospital_sim_agents/llm_agent.py` is the single-LLM policy: `LLMAgent.act(obs, mask)` makes one stateless `choose_action` tool call per environment step and plugs into `eval.evaluate` via `.as_env_agent()`. Invalid choices, missing tool calls and API errors fall back to the longest-waiting operation and are counted in `agent.stats`; always report the fallback rate with results. Real API runs cost money: `examples/evaluate_llm_agent.py` prints an estimate and needs `--yes`; use `--dry-run` (scripted model) to test wiring for free. Model default is `claude-opus-5-5`; forced `tool_choice` and disabled thinking are rejected by it, so the agent uses `auto` and `effort`.
+
 ## Docs
 
 `docs/RL_INTEGRATION.md` (start here to plug in an agent), `docs/ENV_API.md` (actions, masks, observation fields, seeds), `docs/CONFIG_GUIDE.md`, `docs/BASELINE_RESULTS.md`, `docs/ASSUMPTIONS.md`.
