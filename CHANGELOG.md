@@ -63,6 +63,10 @@ of the simulator, environment and benchmark. Observation schema version 1
 - `info["observation_schema_version"]` at reset (the old
   `info["observation_schema"]` key is kept).
 - `docs/RL_CONTRACT.md`: the semantics an RL algorithm can rely on.
+- Frozen benchmark tiers `T1`-`T4` (`benchmarks/tiers/`): scenario plus 100
+  eval and 200 test instance seeds each, protected by a config checksum.
+  `hospital_sim.eval.load_tier`, `evaluate(..., seeds=...)` and
+  `instances_from_seeds`; `gym.make("SchedSim-v0", scenario="T2")`.
 - `Simulator.idle_until`, `Simulator.overtime_so_far`.
 
 ### Changed

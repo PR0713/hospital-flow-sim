@@ -18,7 +18,13 @@ from scipy import stats
 
 from hospital_sim.baselines.dispatching import Policy
 from hospital_sim.domain.model import ProblemInstance, Scenario
-from hospital_sim.env.config import EnvConfig, Randomization, instance_seed, randomized_scenario
+from hospital_sim.env.config import (
+    SPLITS,
+    EnvConfig,
+    Randomization,
+    instance_seed,
+    randomized_scenario,
+)
 from hospital_sim.env.hospital_env import HospitalEnv
 from hospital_sim.generators.instance import generate_instance
 from hospital_sim.sim.metrics import compute_metrics, episode_outcome
@@ -248,11 +254,34 @@ def _run_env_agent(agent: EnvAgent, scenario: Scenario, instance: ProblemInstanc
             return env.sim
 
 
+def instances_from_seeds(
+    scenario: Scenario, seeds: Sequence[int], randomize: Randomization | None = None
+) -> list[ProblemInstance]:
+    """Instances for explicit seeds (e.g. a benchmark tier's frozen lists).
+
+    Every seed must come from the eval or test split of ``instance_seed``
+    (its split field is decoded); training seeds are refused.
+    """
+    instances = []
+    for seed in seeds:
+        split_id = (int(seed) >> 60) & 0xF
+        if split_id not in (SPLITS["eval"], SPLITS["test"]):
+            raise ValueError(
+                f"seed {seed} is not an eval or test instance seed "
+                "(make seeds with instance_seed(base, 'eval' | 'test', episode, resample))"
+            )
+        instances.append(
+            generate_instance(randomized_scenario(scenario, randomize, int(seed)), int(seed))
+        )
+    return instances
+
+
 def evaluate(
     scenario: Scenario,
     policies: Sequence[Policy | EnvAgent],
-    n_episodes: int,
+    n_episodes: int | None = None,
     *,
+    seeds: Sequence[int] | None = None,
     base_seed: int = 0,
     split: str = "eval",
     randomize: Randomization | None = None,
@@ -260,16 +289,24 @@ def evaluate(
     confidence: float = 0.95,
     debug: bool = False,
 ) -> Evaluation:
-    """Run every policy on the same ``n_episodes`` instances."""
-    instances = sample_instances(
-        scenario,
-        n_episodes,
-        base_seed=base_seed,
-        split=split,
-        randomize=randomize,
-        min_patients=min_patients,
-    )
-    result = Evaluation(scenario=scenario.name, n_episodes=n_episodes, confidence=confidence)
+    """Run every policy on the same instances: ``n_episodes`` drawn from
+    ``split`` (and ``base_seed``), or exactly the given ``seeds`` (for the
+    benchmark tiers: ``load_tier(name).test_seeds``)."""
+    if (n_episodes is None) == (seeds is None):
+        raise ValueError("give exactly one of n_episodes and seeds")
+    if seeds is not None:
+        instances = instances_from_seeds(scenario, seeds, randomize)
+    else:
+        assert n_episodes is not None
+        instances = sample_instances(
+            scenario,
+            n_episodes,
+            base_seed=base_seed,
+            split=split,
+            randomize=randomize,
+            min_patients=min_patients,
+        )
+    result = Evaluation(scenario=scenario.name, n_episodes=len(instances), confidence=confidence)
     for policy in policies:
         if policy.name in result.records:
             raise ValueError(f"duplicate policy name '{policy.name}'")
