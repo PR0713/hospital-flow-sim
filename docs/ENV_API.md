@@ -294,11 +294,23 @@ tighter arrays.
 ## `info`
 
 Only these keys ever appear: `time`, `episode_index`, `action_mask`,
-`n_resamples` and `observation_schema` (from `reset`), `invalid_action`, `truncation_reason`, and, on
-the last step, `episode` with `terminated`, `time`, `makespan`,
-`patients_finished`, `total_flow_time`, `total_weighted_flow_time`,
-`total_wait`, `patients_left`, `no_shows`, `leave_penalty`,
-`reward_potential`.
+`nonfinite_obs_count`, `n_resamples` and `observation_schema` (from `reset`),
+`invalid_action`, `truncation_reason`, and, on the last step, `episode` with
+`terminated`, `truncated`, `time`, `makespan`, `patients_finished`,
+`unfinished_patients`, `total_flow_time`, `total_weighted_flow_time`,
+`unfinished_flow_time`, `unfinished_weighted_flow_time`, `total_wait`,
+`patients_left`, `no_shows`, `leave_penalty`, `reward_potential`.
+
+- **Costs of a truncated episode.** `total_*` flow times, `total_wait` and
+  `makespan` count patients still in the system with the time they have spent
+  so far (`unfinished_*` is their share), so cutting an episode short never
+  makes it look cheaper than what it has accrued. For a terminated episode
+  `unfinished_patients` is 0 and the values are the plain episode totals.
+- **`nonfinite_obs_count`** is the number of observation cells this episode
+  that were NaN or infinite and were replaced by 0. It should always be 0; the
+  first occurrence logs a warning on the `hospital_sim.env` logger, and with
+  `EnvConfig(debug=True)` the builder raises `NonFiniteObservationError`
+  naming the field and feature instead.
 
 ## Speed and observation profile
 

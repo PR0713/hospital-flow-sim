@@ -338,6 +338,8 @@ Decisions made while preparing the v0.1 hand-off, following the simulator audit.
 |---|---|---|
 | R1 | Cost of an unfinished episode: every flow and wait metric (harness and `info["episode"]`) counts patients still in the system with the time spent so far (`now - arrival`), and ready-but-unstarted operations with their wait so far. Makespan is the end time while anyone is still in the system. Overtime includes stretches still running. Patients who have not arrived are not counted: how many are still to come is hidden. Values for episodes run to completion are unchanged, bit for bit. | Requested 2026-11-25 (details Mine) |
 | R2 | A harness record whose simulator is not done counts as truncated. Every evaluation table ends with a `truncated` column (share of episodes cut short). Utilization still counts finished operations only. | Requested 2026-11-25 (details Mine) |
+| R3 | Withdrawing a patient (left unseen, or a no-show) cancels all of their open operations before any precedence count is settled, so none of their successors can become ready or start (a pure delay used to start on its own after the patient left). Cancelling a single operation keeps its old meaning: its successors go ahead. New invariant: a withdrawn patient has no hidden, waiting, ready or running operation. Results on configs with patience change slightly (the leaver's flow time now ends when they leave). | Requested 2026-11-25 (details Mine) |
+| R4 | The observation builder never emits NaN or infinity. In debug mode it raises `NonFiniteObservationError`; otherwise it replaces the value with 0, counts it in `info["nonfinite_obs_count"]` (per episode) and logs one warning per env instance. | Requested 2026-11-25 |
 
 ## Out of scope (in the theory primer, not in the brief)
 

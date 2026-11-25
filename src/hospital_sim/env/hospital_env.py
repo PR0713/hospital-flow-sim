@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import gymnasium as gym
@@ -33,6 +34,7 @@ from hospital_sim.sim.metrics import compute_metrics, episode_outcome
 from hospital_sim.sim.simulator import OpState, Simulator
 
 _MAX_RESAMPLES = 1000
+_log = logging.getLogger("hospital_sim.env")
 # The only keys ``info`` may ever contain.
 INFO_KEYS = frozenset(
     {
@@ -44,6 +46,9 @@ INFO_KEYS = frozenset(
         "invalid_action",
         "truncation_reason",
         "episode",
+        # Observation cells this episode that were NaN or infinite and replaced
+        # by 0 (always 0 unless something is wrong; debug mode raises instead).
+        "nonfinite_obs_count",
     }
 )
 
@@ -144,6 +149,8 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
         self._waits = 0
         self._potential = 0.0
         self._over = True
+        self._nonfinite = 0
+        self._warned_nonfinite = False
 
     # --- reset ---------------------------------------------------------------
 
@@ -209,7 +216,9 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
             time_scale=self.time_scale,
             graph=self.config.observation == "graph",
             gated_work_prior=self.config.gated_work_prior,
+            debug=self.config.debug,
         )
+        self._nonfinite = 0
         self._waits = 0
         self._potential = 0.0  # every potential is zero at time zero
         self._over = not self.sim.run_until_decision()
@@ -298,6 +307,16 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
         self._observation = builder.build(
             self._startable, self._waits, self.config.max_consecutive_waits
         )
+        if builder.nonfinite:
+            self._nonfinite += builder.nonfinite
+            if not self._warned_nonfinite:
+                self._warned_nonfinite = True
+                _log.warning(
+                    "observation had %d non-finite values (replaced by 0) at t=%s; "
+                    "counted in info['nonfinite_obs_count']. Run with debug=True to locate.",
+                    builder.nonfinite,
+                    sim.now,
+                )
         mask = np.zeros(self.n_actions, dtype=np.bool_)
         if not self._over:
             n_rules = len(self._rules)
@@ -324,4 +343,5 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
             "time": self.sim.now,
             "episode_index": self._episode,
             "action_mask": self._mask.copy(),
+            "nonfinite_obs_count": self._nonfinite,
         }

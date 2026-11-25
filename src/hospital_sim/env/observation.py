@@ -82,6 +82,19 @@ GLOBAL_FEATURES = (
     "consecutive_waits",
 )
 
+_COLUMNS = {
+    "ops": OP_FEATURES,
+    "patients": PATIENT_FEATURES,
+    "resources": RESOURCE_FEATURES,
+    "roles": ROLE_FEATURES,
+    "global": GLOBAL_FEATURES,
+}
+
+
+class NonFiniteObservationError(AssertionError):
+    """Debug mode: the observation builder produced a NaN or infinite value."""
+
+
 _UNPLANNED = (1 << availability.ABSENCE) | (1 << availability.BREAKDOWN)
 # Cap on "time to roster change", in units of time_scale.
 _ROSTER_CAP = 1e3
@@ -105,8 +118,13 @@ class ObservationBuilder:
         time_scale: float,
         graph: bool,
         gated_work_prior: bool = True,
+        debug: bool = False,
     ) -> None:
         self.sim = sim
+        # Non-finite values: raise in debug mode, else replace with 0 and
+        # count them in ``nonfinite`` (cells replaced by the last ``build``).
+        self.debug = debug
+        self.nonfinite = 0
         self.max_patients, self.max_ops, self.max_edges = max_patients, max_ops, max_edges
         self.scale = time_scale
         self.graph = graph
@@ -464,7 +482,35 @@ class ObservationBuilder:
             edges[0, : len(src)] = src
             edges[1, : len(dst)] = dst
             observation["precedence_edges"] = edges
+        self.nonfinite = self._guard_finite(observation)
         return observation
+
+    def _guard_finite(self, observation: dict[str, Any]) -> int:
+        """No NaN or infinity ever leaves the builder. Returns cells replaced."""
+        replaced = 0
+        for key, value in observation.items():
+            if value.dtype.kind != "f":
+                continue
+            bad = ~np.isfinite(value)
+            count = int(bad.sum())
+            if not count:
+                continue
+            if self.debug:
+                cells = np.argwhere(bad)[:5].tolist()
+                names = _COLUMNS.get(key)
+                if names is not None and value.ndim == 2:
+                    features = sorted({names[c] for _, c in np.argwhere(bad)})
+                elif names is not None:
+                    features = sorted({names[c] for (c,) in np.argwhere(bad)})
+                else:
+                    features = []
+                raise NonFiniteObservationError(
+                    f"observation field '{key}' has {count} non-finite values "
+                    f"(features {features}, first cells {cells})"
+                )
+            value[bad] = 0.0
+            replaced += count
+        return replaced
 
     def graph_view(self, observation: dict[str, Any]) -> dict[str, Any]:
         """The same information without padding, as typed nodes and edge lists

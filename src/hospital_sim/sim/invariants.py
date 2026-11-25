@@ -28,7 +28,7 @@ def _require(condition: bool, message: str) -> None:
 
 def check_invariants(sim: Simulator) -> None:
     # Imported here: simulator.py imports this module lazily, and vice versa.
-    from hospital_sim.sim.simulator import EventKind, OpState
+    from hospital_sim.sim.simulator import EventKind, OpState, PatientStatus
 
     res = sim.resources
     state = sim.state
@@ -107,6 +107,16 @@ def check_invariants(sim: Simulator) -> None:
             (open_ops == 0) != math.isnan(sim.completion_time[pid]),
             f"completion time of patient {pid} is inconsistent",
         )
+        # A withdrawn patient (left unseen, or never came) has nothing that
+        # could still start or run: no hidden, waiting, ready or running op.
+        status = PatientStatus(sim.patient_status[pid])
+        if status in (PatientStatus.LEFT, PatientStatus.NO_SHOW):
+            live = [
+                op.id
+                for op in record.operations
+                if state[op.id] not in (OpState.DONE, OpState.CANCELLED)
+            ]
+            _require(not live, f"withdrawn patient {pid} ({status.name}) has live ops {live}")
     _require(sim.n_patients_done == done, "finished-patient count is stale")
 
     # --- event list: exactly one completion per running op, nothing in the past ---

@@ -2,7 +2,7 @@
 
 from hospital_sim.env.config import EnvConfig, Randomization, instance_seed
 from hospital_sim.env.hospital_env import INFO_KEYS, HospitalEnv, InvalidActionError
-from hospital_sim.env.observation import OBSERVATION_SCHEMA_VERSION
+from hospital_sim.env.observation import OBSERVATION_SCHEMA_VERSION, NonFiniteObservationError
 from hospital_sim.env.rewards import REWARDS, Combined, FlowTime, Makespan, Reward
 
 __all__ = [
@@ -15,6 +15,7 @@ __all__ = [
     "HospitalEnv",
     "InvalidActionError",
     "Makespan",
+    "NonFiniteObservationError",
     "Randomization",
     "Reward",
     "instance_seed",

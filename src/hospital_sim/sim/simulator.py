@@ -338,9 +338,30 @@ class Simulator:
                 self._cancel(gated)
 
     def _cancel_patient(self, patient: int) -> None:
-        for op in self.instance.patients[patient].operations:
-            if self.state[op.id] in (OpState.HIDDEN, OpState.WAITING, OpState.READY):
-                self._cancel(op.id)
+        """Withdraw a whole patient (left unseen, or a no-show).
+
+        Unlike cancelling one operation, which lets its successors go ahead,
+        nothing of a withdrawn patient may become ready or start afterwards.
+        So every open operation is marked cancelled first, and only then are
+        the precedence counts settled: by the time a successor's count drops
+        to zero it is already cancelled, and a pure delay can no longer start
+        on its own for someone who has gone.
+        """
+        open_ops = [
+            op.id
+            for op in self.instance.patients[patient].operations
+            if self.state[op.id] in (OpState.HIDDEN, OpState.WAITING, OpState.READY)
+        ]
+        # Operations with nothing left to wait for, taken before any release:
+        # the others are released through them (``_release_successors``).
+        roots = [op for op in open_ops if self.pending_preds[op] == 0]
+        for op in open_ops:
+            self._ready.pop(op, None)
+            self.state[op] = OpState.CANCELLED
+        for op in open_ops:
+            self._close(op)
+        for op in roots:
+            self._release_successors(op)
 
     # --- time --------------------------------------------------------------
 
