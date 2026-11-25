@@ -12,6 +12,7 @@ from hospital_sim.domain.model import ArrivalKind, ArrivalSpec, Scenario
 from hospital_sim.env.rewards import Reward
 
 SPLITS = {"train": 0, "eval": 1, "test": 2}
+TRUNCATION_COSTS = ("none", "expected_remaining")
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,14 @@ class EnvConfig:
     # leaves unseen. ``None`` = twice the expected work of the longest pathway,
     # so that letting a patient leave is never cheaper than treating them.
     leave_penalty: float | None = None
+    # Extra cost charged as one final reward term when an episode is truncated:
+    # "none" (default; for learners that bootstrap on ``truncated``) or
+    # "expected_remaining": per patient still in the system, weight times a
+    # lower bound on their expected remaining time in system (see
+    # ``ObservationBuilder.remaining_flow_lower_bound``). Use it only with a
+    # learner that treats truncation as terminal; with bootstrapping it
+    # counts the future twice.
+    truncation_cost: str = "none"
     # "raise" on a masked action, or "fallback" to the lowest valid action.
     on_invalid_action: str = "raise"
     debug: bool = False
@@ -75,6 +84,10 @@ class EnvConfig:
             raise ValueError(f"split must be one of {sorted(SPLITS)}, got {self.split!r}")
         if self.observation not in ("dict", "graph"):
             raise ValueError("observation must be 'dict' or 'graph'")
+        if self.truncation_cost not in TRUNCATION_COSTS:
+            raise ValueError(
+                f"truncation_cost must be one of {TRUNCATION_COSTS}, got {self.truncation_cost!r}"
+            )
         if self.on_invalid_action not in ("raise", "fallback"):
             raise ValueError("on_invalid_action must be 'raise' or 'fallback'")
         if self.min_patients < 1:

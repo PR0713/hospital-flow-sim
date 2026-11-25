@@ -377,6 +377,21 @@ class Simulator:
         self._check()
         return True
 
+    def idle_until(self, time: float) -> None:
+        """Let time pass until ``time`` with nothing happening.
+
+        For a scheduler that chooses to wait when no event is pending. No
+        event may be due before ``time``; anything due exactly then is
+        processed.
+        """
+        if time < self.now:
+            raise SimulationError(f"cannot go back from t={self.now} to t={time}")
+        if self._events and self._events[0][0] < time:
+            raise SimulationError(f"an event is due at t={self._events[0][0]} < t={time}")
+        self.now = time
+        self._drain()
+        self._check()
+
     def run_until_decision(self) -> bool:
         """Advance until some operation can start. ``False`` once the episode is over."""
         stalled = 0

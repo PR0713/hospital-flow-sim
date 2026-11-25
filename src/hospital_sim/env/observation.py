@@ -156,6 +156,21 @@ class ObservationBuilder:
             dtype=np.float32,
         )
 
+        # Per operation type: the shortest an operation can be expected to take
+        # relative to its mean, i.e. 1 / the fastest member of a speed role
+        # (team speed is a geometric mean, never above its fastest member).
+        speeds = [float(r.attributes.get("speed", 1.0)) for r in nominal.resources]
+        fastest = []
+        for t, op_type in enumerate(nominal.operation_types):
+            members = [
+                r
+                for i, req in enumerate(op_type.requirements)
+                if req.role in op_type.speed_roles
+                for r in sim.resources.members[sim.resources.requirements[t][i][0]]
+            ]
+            fastest.append(1.0 / max((speeds[r] for r in members), default=1.0))
+        self.fastest_factor = np.array(fastest)[self.type_of] if n else np.zeros(0)
+
         n_res = len(sim.resources.resource_ids)
         self.resource_roles = np.zeros((n_res, n_roles), dtype=np.int8)
         for r, roles in enumerate(sim.resources.roles_of):
@@ -298,6 +313,49 @@ class ObservationBuilder:
             )
         )
         return dist.expected_remaining(sim.now - sim.start_time[op])
+
+    def remaining_flow_lower_bound(self) -> dict[int, float]:
+        """Per patient in the system (engine id): a lower bound on the expected
+        time until they are done, from public information only.
+
+        It is the larger of (a) the expected remaining work of their visible
+        open operations that occupy the patient, which run one at a time, and
+        (b) the longest precedence chain of visible open operations. Running
+        operations count their conditional expected remaining time; others
+        count their mean as if done by the fastest eligible team. Operations
+        not yet revealed are ignored, which keeps it a lower bound. Exact
+        (per sample path) for deterministic durations.
+        """
+        sim = self.sim
+        self.sync_slots()
+        remaining: dict[int, float] = {}
+        for op in sim.visible_ops:
+            state = sim.state[op]
+            if state == OpState.RUNNING:
+                remaining[op] = self._expected_remaining(op)
+            elif state in (OpState.WAITING, OpState.READY):
+                remaining[op] = float(self.expected[op] * self.fastest_factor[op])
+        preds: dict[int, list[int]] = {op: [] for op in remaining}
+        visible = sim.visible_ops
+        for src, dst in self._visible_edges.T:
+            a, b = visible[int(src)], visible[int(dst)]
+            if a in remaining and b in remaining:
+                preds[b].append(a)
+        chain: dict[int, float] = {}
+
+        def longest(op: int) -> float:
+            if op not in chain:
+                chain[op] = remaining[op] + max((longest(p) for p in preds[op]), default=0.0)
+            return chain[op]
+
+        bounds: dict[int, float] = {}
+        for patient in sim.visible_patients:
+            if sim.patient_status[patient] != PatientStatus.PRESENT:
+                continue
+            own = [op for op in self.ops_of_patient[patient] if op in remaining]
+            occupied = sum(remaining[op] for op in own if self.needs_patient[op])
+            bounds[patient] = max(occupied, max((longest(op) for op in own), default=0.0))
+        return bounds
 
     def build(self, startable: list[int], consecutive_waits: int, max_waits: int) -> dict[str, Any]:
         sim, scale = self.sim, self.scale

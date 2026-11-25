@@ -74,8 +74,16 @@ a full team is idle; all rules of a valid operation are valid.
 
 Wait is valid when waiting could change something *for a reason the agent can
 know*: an operation is running, a room is in turnover, the scenario has
-rosters or breakdowns, or the scenario has arrivals over time. In a static
-batch with nothing running, wait is masked.
+rosters or breakdowns, or an arrival stream is not provably over. A stream is
+provably over from public information alone: static patients are all there
+at time zero, a booked stream once every appointment has resolved (arrived or
+no-show), a Poisson stream past its `horizon` or once `n_patients` of its
+class have arrived. In a static batch with nothing running, wait is masked.
+
+A valid wait always lets time pass. It jumps to the next event; if no event
+is pending (possible only before a Poisson stream's horizon), it lets time
+run to that horizon with nothing happening. Whether another arrival is
+actually drawn is hidden, so neither the mask nor the wait depends on it.
 
 A masked action raises `InvalidActionError`. With
 `on_invalid_action="fallback"` the lowest valid action is executed instead
@@ -227,7 +235,16 @@ object with `potential(sim) -> float` that is zero at time zero and never
 decreases.
 
 For a truncated episode the total covers only the cost accrued up to the
-truncation.
+truncation, unless `EnvConfig(truncation_cost="expected_remaining")`, which
+adds one final term: per patient still in the system, weight x a lower bound
+on their expected remaining time in system (the larger of their remaining
+patient-occupying work and their longest remaining precedence chain, from
+visible operations and public means at the fastest eligible team speed). It
+is reported, unscaled, as `info["episode"]["truncation_cost"]`. The default
+is `"none"`: a learner should bootstrap on `truncated` (value of the final
+observation), and adding a truncation cost on top would count the future
+twice. Use `"expected_remaining"` only with a learner that treats truncation
+as terminal. See `docs/RL_CONTRACT.md`.
 
 **Patients who leave.** A patient who gives up stops accruing flow time,
 which on its own would reward ignoring them. So every reward adds
@@ -299,7 +316,8 @@ Only these keys ever appear: `time`, `episode_index`, `action_mask`,
 `terminated`, `truncated`, `time`, `makespan`, `patients_finished`,
 `unfinished_patients`, `total_flow_time`, `total_weighted_flow_time`,
 `unfinished_flow_time`, `unfinished_weighted_flow_time`, `total_wait`,
-`patients_left`, `no_shows`, `leave_penalty`, `reward_potential`.
+`patients_left`, `no_shows`, `leave_penalty`, `reward_potential`,
+`truncation_cost`.
 
 - **Costs of a truncated episode.** `total_*` flow times, `total_wait` and
   `makespan` count patients still in the system with the time they have spent

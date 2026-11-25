@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from typing import Any
 
 import gymnasium as gym
@@ -31,7 +32,7 @@ from hospital_sim.generators.instance import generate_instance
 from hospital_sim.sim.allocation import RULES
 from hospital_sim.sim.durations import StandardDurationModel
 from hospital_sim.sim.metrics import compute_metrics, episode_outcome
-from hospital_sim.sim.simulator import OpState, Simulator
+from hospital_sim.sim.simulator import OpState, PatientStatus, Simulator
 
 _MAX_RESAMPLES = 1000
 _log = logging.getLogger("hospital_sim.env")
@@ -99,12 +100,10 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
         self.max_ops = config.max_ops or self.max_patients * longest
         self.max_edges = config.max_edges or 3 * self.max_ops
 
-        # Public reasons for which waiting can change something. Whether an
-        # arrival is actually still to come is hidden, so it is not used.
-        self._always_waitable = (
-            any(a.kind is not ArrivalKind.STATIC for a in scenario.arrivals)
-            or bool(scenario.calendars)
-            or any(r.breakdown is not None for r in scenario.resources)
+        # Waiting is offered only for public reasons that something can still
+        # happen (see ``_wait_is_valid``). Rosters and breakdowns go on forever.
+        self._rosters = bool(scenario.calendars) or any(
+            r.breakdown is not None for r in scenario.resources
         )
 
         n_rules = len(self._rules)
@@ -244,7 +243,15 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
             action = int(np.flatnonzero(self._mask)[0])
 
         if action == self.wait_action:
-            sim.advance()  # no-op if nothing is scheduled
+            if not sim.advance():
+                # Nothing is scheduled, yet by public information an arrival
+                # may still come: let time pass to the earliest public bound
+                # (an arrival horizon). Never a no-op, and it reveals nothing
+                # that waiting in the real system would not.
+                bound = self._public_arrival_bound()
+                if bound is None:  # the mask rules this out
+                    raise RuntimeError("wait with nothing that could happen")
+                sim.idle_until(bound)
             self._waits += 1
         else:
             slot, rule = divmod(action, len(self._rules))
@@ -268,6 +275,16 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
         self._potential = potential
 
         self._refresh()
+        truncation_cost = 0.0
+        if reason is not None and self.config.truncation_cost == "expected_remaining":
+            # One final term for the cost still to come (lower bound, public
+            # information only). Only for learners that treat truncation as
+            # terminal; a bootstrapping learner should keep the default "none".
+            truncation_cost = math.fsum(
+                sim.weight[patient] * bound
+                for patient, bound in builder.remaining_flow_lower_bound().items()
+            )
+            reward -= truncation_cost * self._reward_scale
         info = self._info()
         if invalid:
             info["invalid_action"] = True
@@ -295,6 +312,8 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
                 "no_shows": sim.n_no_show,
                 "leave_penalty": self.leave_penalty * sim.left_weight,
                 "reward_potential": potential,
+                # Unscaled; the final reward already includes -scale * this.
+                "truncation_cost": truncation_cost,
             }
         return self._observation, float(reward), terminated, reason is not None, info
 
@@ -324,9 +343,65 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
                 slot = int(builder.slot_of[op])
                 mask[slot * n_rules : (slot + 1) * n_rules] = True
             if self.wait_action is not None:
-                running = any(s == OpState.RUNNING for s in sim.state)
-                mask[self.wait_action] = self._always_waitable or running or any(sim.in_turnover)
+                mask[self.wait_action] = self._wait_is_valid()
         self._mask = mask
+
+    def _wait_is_valid(self) -> bool:
+        """Waiting can change something, for a reason the agent can know:
+        an operation is running, a resource is in turnover, the scenario has
+        rosters or breakdowns, or an arrival stream is not provably over."""
+        sim = self.sim
+        assert sim is not None
+        return (
+            self._rosters
+            or any(sim.in_turnover)
+            or any(s == OpState.RUNNING for s in sim.state)
+            or self._arrivals_may_come()
+        )
+
+    def _arrivals_may_come(self) -> bool:
+        """From public information only: may a patient still arrive?
+
+        Static patients are all there at time zero. A booked stream is over
+        once every appointment has resolved (arrived or no-show). A Poisson
+        stream is over past its horizon or once its patient cap has arrived.
+        Whether an arrival is actually still drawn is hidden and not used.
+        """
+        sim = self.sim
+        assert sim is not None
+        patients = sim.instance.patients
+        known: dict[str, int] = {}
+        expected: set[str] = set()
+        for p in sim.visible_patients:  # public: the booking list and arrived walk-ins
+            name = patients[p].patient_class
+            if sim.patient_status[p] == PatientStatus.EXPECTED:
+                expected.add(name)
+            elif sim.arrived[p]:
+                known[name] = known.get(name, 0) + 1
+        for spec in sim.instance.scenario.arrivals:
+            if spec.kind is ArrivalKind.SCHEDULED and spec.name in expected:
+                return True
+            if spec.kind is ArrivalKind.POISSON:
+                past_horizon = spec.horizon is not None and sim.now >= spec.horizon
+                capped = spec.n_patients is not None and known.get(spec.name, 0) >= spec.n_patients
+                if not (past_horizon or capped):
+                    return True
+        return False
+
+    def _public_arrival_bound(self) -> float | None:
+        """The earliest horizon of a Poisson stream that is not provably over."""
+        sim = self.sim
+        assert sim is not None
+        if not self._arrivals_may_come():
+            return None
+        horizons = [
+            spec.horizon
+            for spec in sim.instance.scenario.arrivals
+            if spec.kind is ArrivalKind.POISSON
+            and spec.horizon is not None
+            and spec.horizon > sim.now
+        ]
+        return min(horizons) if horizons else None
 
     def action_masks(self) -> NDArray[np.bool_]:
         """Boolean array over actions; ``True`` means the action is valid now."""
