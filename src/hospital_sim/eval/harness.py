@@ -21,7 +21,7 @@ from hospital_sim.domain.model import ProblemInstance, Scenario
 from hospital_sim.env.config import EnvConfig, Randomization, instance_seed, randomized_scenario
 from hospital_sim.env.hospital_env import HospitalEnv
 from hospital_sim.generators.instance import generate_instance
-from hospital_sim.sim.metrics import compute_metrics
+from hospital_sim.sim.metrics import compute_metrics, episode_outcome
 from hospital_sim.sim.simulator import OpState, Simulator
 
 METRICS = (
@@ -36,7 +36,18 @@ METRICS = (
     "total_weighted_flow_time",
     "left_weight",
     "arrived_weight",
+    # 1.0 if the episode ended before every patient was done (an EnvAgent
+    # hitting a truncation limit), else 0.0. Its mean is the truncation rate.
+    "truncated",
+    # Patients still in the system at the end, and their accrued flow time.
+    "unfinished",
+    "unfinished_flow_time",
+    "unfinished_weighted_flow_time",
 )
+# Every flow and wait metric above counts the patients still in the system at
+# the end with the time they have spent so far (``sim.metrics.EpisodeOutcome``),
+# so cutting an episode short can never make its cost look smaller than what
+# it has accrued. For episodes run to completion nothing changes.
 
 
 @dataclass(frozen=True)
@@ -60,35 +71,45 @@ class EnvAgent:
 
 
 def record_episode(sim: Simulator) -> EpisodeRecord:
+    """Score ``sim`` as it stands. An unfinished run counts as truncated and
+    is charged the cost its unfinished patients have accrued so far."""
     metrics = compute_metrics(sim)
+    outcome = episode_outcome(sim, metrics)
+    now = sim.now
     by_class: dict[str, dict[str, float]] = {}
     for patient in sim.instance.patients:
-        if not sim.arrived[patient.id] or math.isnan(sim.completion_time[patient.id]):
+        if not sim.arrived[patient.id]:
             continue
+        completion = sim.completion_time[patient.id]
         entry = by_class.setdefault(
             patient.patient_class, {"patients": 0.0, "flow": 0.0, "wait": 0.0, "ops": 0.0}
         )
         entry["patients"] += 1
-        entry["flow"] += sim.completion_time[patient.id] - patient.arrival_time
+        entry["flow"] += (now if math.isnan(completion) else completion) - patient.arrival_time
         for op in patient.operations:
             if sim.state[op.id] == OpState.DONE:
                 entry["wait"] += sim.start_time[op.id] - sim.ready_time[op.id]
                 entry["ops"] += 1
+            elif sim.state[op.id] == OpState.READY and math.isnan(completion):
+                entry["wait"] += now - sim.ready_time[op.id]
+                entry["ops"] += 1
     return EpisodeRecord(
         values={
-            "makespan": metrics.makespan,
-            "mean_flow_time": metrics.mean_flow_time,
-            "weighted_mean_flow_time": metrics.weighted_mean_flow_time,
-            "mean_op_wait": metrics.mean_op_wait,
-            "total_wait": metrics.total_wait,
-            "overtime": math.fsum(sim.overtime),
+            "makespan": outcome.makespan,
+            "mean_flow_time": outcome.mean_flow_time,
+            "weighted_mean_flow_time": outcome.weighted_mean_flow_time,
+            "mean_op_wait": outcome.mean_op_wait,
+            "total_wait": outcome.total_wait,
+            "overtime": outcome.overtime,
             "left": float(sim.n_left),
             "no_show": float(sim.n_no_show),
-            "total_weighted_flow_time": math.fsum(
-                w * f for w, f in zip(metrics.weights, metrics.flow_times, strict=True)
-            ),
+            "total_weighted_flow_time": outcome.weighted_flow_time,
             "left_weight": sim.left_weight,
-            "arrived_weight": math.fsum(metrics.weights),
+            "arrived_weight": outcome.arrived_weight,
+            "truncated": 0.0 if sim.done else 1.0,
+            "unfinished": float(outcome.unfinished),
+            "unfinished_flow_time": outcome.unfinished_flow_time,
+            "unfinished_weighted_flow_time": outcome.unfinished_weighted_flow_time,
         },
         utilization=metrics.utilization,
         by_class={
@@ -191,18 +212,26 @@ class Evaluation:
     ) -> str:
         """Markdown table: mean ± CI half-width per policy, best first by the
         first metric. ``left`` (patients who gave up waiting) is always worth
-        including: a policy can look good on flow time by letting people leave."""
+        including: a policy can look good on flow time by letting people leave.
+
+        A final ``truncated`` column (share of episodes cut short) is always
+        added: costs of truncated episodes are only the cost accrued so far."""
         lines = [
-            "| Policy | " + " | ".join(metrics) + " |",
-            "|---|" + "---|" * len(metrics),
+            "| Policy | " + " | ".join(metrics) + " | truncated |",
+            "|---|" + "---|" * (len(metrics) + 1),
         ]
         summaries = {m: self.summary(m) for m in metrics}
         for policy in self.ranking(metrics[0]):
             cells = [
                 f"{summaries[m][policy][0]:.1f} ± {summaries[m][policy][2]:.1f}" for m in metrics
             ]
+            cells.append(f"{self.truncation_rate(policy):.0%}")
             lines.append(f"| {policy} | " + " | ".join(cells) + " |")
         return "\n".join(lines)
+
+    def truncation_rate(self, policy: str) -> float:
+        """Share of this policy's episodes that ended before every patient was done."""
+        return float(self.series(policy, "truncated").mean())
 
 
 def _run_env_agent(agent: EnvAgent, scenario: Scenario, instance: ProblemInstance) -> Simulator:

@@ -8,7 +8,13 @@ from hospital_sim.sim.durations import (
     make_distribution,
 )
 from hospital_sim.sim.invariants import InvariantViolation, check_invariants
-from hospital_sim.sim.metrics import EpisodeMetrics, compute_metrics
+from hospital_sim.sim.metrics import (
+    EpisodeMetrics,
+    EpisodeOutcome,
+    compute_metrics,
+    episode_outcome,
+    unfinished_patients,
+)
 from hospital_sim.sim.resources import AllocationError, ResourceManager, Team
 from hospital_sim.sim.runner import Dispatcher, fifo, run
 from hospital_sim.sim.simulator import (
@@ -26,6 +32,7 @@ __all__ = [
     "Distribution",
     "DurationModel",
     "EpisodeMetrics",
+    "EpisodeOutcome",
     "InvariantViolation",
     "OpState",
     "PatientStatus",
@@ -37,7 +44,9 @@ __all__ = [
     "StartContext",
     "check_invariants",
     "compute_metrics",
+    "episode_outcome",
     "fifo",
     "make_distribution",
     "run",
+    "unfinished_patients",
 ]

@@ -329,6 +329,16 @@ environment's requirement features.
 | L6 | Future arrivals are hidden from the agent until they occur. *(M3)* | Accepted |
 | L7 | Team-dependent durations: a hook plus one worked example (per-resource speed multiplier). *(M2)* | Accepted |
 
+## v0.1 release (2026-11-25)
+
+Decisions made while preparing the v0.1 hand-off, following the simulator audit.
+"Requested" means specified in the v0.1 brief; "Mine" means chosen during implementation.
+
+| # | Decision | Status |
+|---|---|---|
+| R1 | Cost of an unfinished episode: every flow and wait metric (harness and `info["episode"]`) counts patients still in the system with the time spent so far (`now - arrival`), and ready-but-unstarted operations with their wait so far. Makespan is the end time while anyone is still in the system. Overtime includes stretches still running. Patients who have not arrived are not counted: how many are still to come is hidden. Values for episodes run to completion are unchanged, bit for bit. | Requested 2026-11-25 (details Mine) |
+| R2 | A harness record whose simulator is not done counts as truncated. Every evaluation table ends with a `truncated` column (share of episodes cut short). Utilization still counts finished operations only. | Requested 2026-11-25 (details Mine) |
+
 ## Out of scope (in the theory primer, not in the brief)
 
 The primer in this folder describes a broader whole-hospital model. The brief

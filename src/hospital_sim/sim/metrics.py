@@ -51,6 +51,95 @@ class EpisodeMetrics:
         return math.fsum(self.op_waits) / len(self.op_waits) if self.op_waits else 0.0
 
 
+@dataclass(frozen=True, slots=True)
+class EpisodeOutcome:
+    """The cost of an episode so far, counting patients still in the system.
+
+    ``EpisodeMetrics`` covers finished patients only, which is right for a
+    run to completion but flatters one that was cut off. Here a patient who
+    arrived and is still in the system contributes the time spent so far
+    (``now - arrival``), and a ready operation that has not started
+    contributes the wait so far. For a finished episode (``unfinished == 0``)
+    every value equals its ``EpisodeMetrics`` counterpart exactly.
+
+    Patients who have not arrived yet are not counted: they are not in the
+    system, and how many are still to come is hidden information.
+    """
+
+    end_time: float  # sim.now when the outcome was taken
+    # Last completion, or ``end_time`` while anyone is still in the system.
+    makespan: float
+    # Patients who arrived and are still in the system.
+    unfinished: int
+    # Finished (including left) plus unfinished patients.
+    arrived: int
+    arrived_weight: float
+    # Totals over finished patients plus the accrued time of unfinished ones.
+    flow_time: float
+    weighted_flow_time: float
+    # The unfinished patients' share of the totals above.
+    unfinished_flow_time: float
+    unfinished_weighted_flow_time: float
+    # Waits of started operations plus the waits so far of ready ones.
+    total_wait: float
+    n_waits: int
+    # Overtime including stretches still running at ``end_time``.
+    overtime: float
+
+    @property
+    def mean_flow_time(self) -> float:
+        return self.flow_time / self.arrived if self.arrived else 0.0
+
+    @property
+    def weighted_mean_flow_time(self) -> float:
+        return self.weighted_flow_time / self.arrived_weight if self.arrived_weight else 0.0
+
+    @property
+    def mean_op_wait(self) -> float:
+        return self.total_wait / self.n_waits if self.n_waits else 0.0
+
+
+def unfinished_patients(sim: Simulator) -> list[int]:
+    """Patients who have arrived and are still in the system."""
+    return [
+        p.id
+        for p in sim.instance.patients
+        if sim.arrived[p.id] and math.isnan(sim.completion_time[p.id])
+    ]
+
+
+def episode_outcome(sim: Simulator, metrics: EpisodeMetrics | None = None) -> EpisodeOutcome:
+    """Cost so far of ``sim``, finished or not. See ``EpisodeOutcome``."""
+    metrics = metrics or compute_metrics(sim)
+    now = sim.now
+    patients = sim.instance.patients
+    unfinished = unfinished_patients(sim)
+    open_flows = [now - patients[p].arrival_time for p in unfinished]
+    open_weights = [patients[p].weight for p in unfinished]
+    pending = [
+        now - sim.ready_time[op]
+        for p in unfinished
+        for op in (o.id for o in patients[p].operations)
+        if sim.state[op] == OpState.READY
+    ]
+    finished_weighted = [w * f for w, f in zip(metrics.weights, metrics.flow_times, strict=True)]
+    open_weighted = [w * f for w, f in zip(open_weights, open_flows, strict=True)]
+    return EpisodeOutcome(
+        end_time=now,
+        makespan=max(metrics.makespan, now) if unfinished else metrics.makespan,
+        unfinished=len(unfinished),
+        arrived=len(metrics.flow_times) + len(unfinished),
+        arrived_weight=math.fsum((*metrics.weights, *open_weights)),
+        flow_time=math.fsum((*metrics.flow_times, *open_flows)),
+        weighted_flow_time=math.fsum((*finished_weighted, *open_weighted)),
+        unfinished_flow_time=math.fsum(open_flows),
+        unfinished_weighted_flow_time=math.fsum(open_weighted),
+        total_wait=math.fsum((*metrics.op_waits, *pending)),
+        n_waits=len(metrics.op_waits) + len(pending),
+        overtime=math.fsum(sim.overtime_so_far()),
+    )
+
+
 def compute_metrics(sim: Simulator) -> EpisodeMetrics:
     """Metrics over finished patients and finished operations."""
     patients = sim.instance.patients

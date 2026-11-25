@@ -209,7 +209,9 @@ def test_class_means_are_consistent_with_the_overall_mean(stress_eval: Any) -> N
 
 def test_table_and_ranking(stress_eval: Any) -> None:
     table = stress_eval.table()
-    assert table.splitlines()[0] == "| Policy | mean_flow_time | makespan | mean_op_wait | left |"
+    assert table.splitlines()[0] == (
+        "| Policy | mean_flow_time | makespan | mean_op_wait | left | truncated |"
+    )
     assert len(table.splitlines()) == 2 + 3
     assert stress_eval.ranking("mean_flow_time")[0] in table.splitlines()[2]
     assert set(stress_eval.utilization("fifo+flexible")) == {

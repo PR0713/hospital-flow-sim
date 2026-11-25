@@ -284,6 +284,13 @@ class Simulator:
             return self._flow_done[1] + self.now * sum_w - sum_wa
         return self._flow_done[0] + self.now * count - sum_a
 
+    def overtime_so_far(self) -> list[float]:
+        """Overtime per resource up to now, including stretches still running."""
+        return [
+            total if math.isnan(since) else total + self.now - since
+            for total, since in zip(self.overtime, self._overtime_from, strict=True)
+        ]
+
     def expected_remaining(self, op: int) -> float:
         """Expected time left for a running operation, given how long it has
         already run. Uses the distribution only, never the realized duration."""

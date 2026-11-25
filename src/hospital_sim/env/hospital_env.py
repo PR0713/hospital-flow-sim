@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
 import gymnasium as gym
@@ -30,7 +29,7 @@ from hospital_sim.env.rewards import REWARDS, Reward
 from hospital_sim.generators.instance import generate_instance
 from hospital_sim.sim.allocation import RULES
 from hospital_sim.sim.durations import StandardDurationModel
-from hospital_sim.sim.metrics import compute_metrics
+from hospital_sim.sim.metrics import compute_metrics, episode_outcome
 from hospital_sim.sim.simulator import OpState, Simulator
 
 _MAX_RESAMPLES = 1000
@@ -266,17 +265,23 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
         if reason is not None:
             info["truncation_reason"] = reason
         if self._over:
+            # Costs count patients still in the system with the time they have
+            # spent so far, so a truncated episode is never scored as cheaper
+            # than what it has accrued. Unchanged for terminated episodes.
             metrics = compute_metrics(sim)
+            outcome = episode_outcome(sim, metrics)
             info["episode"] = {
                 "terminated": terminated,
+                "truncated": reason is not None,
                 "time": sim.now,
-                "makespan": metrics.makespan,
+                "makespan": outcome.makespan,
                 "patients_finished": len(metrics.flow_times),
-                "total_flow_time": math.fsum(metrics.flow_times),
-                "total_weighted_flow_time": math.fsum(
-                    w * f for w, f in zip(metrics.weights, metrics.flow_times, strict=True)
-                ),
-                "total_wait": metrics.total_wait,
+                "unfinished_patients": outcome.unfinished,
+                "total_flow_time": outcome.flow_time,
+                "total_weighted_flow_time": outcome.weighted_flow_time,
+                "unfinished_flow_time": outcome.unfinished_flow_time,
+                "unfinished_weighted_flow_time": outcome.unfinished_weighted_flow_time,
+                "total_wait": outcome.total_wait,
                 "patients_left": sim.n_left,
                 "no_shows": sim.n_no_show,
                 "leave_penalty": self.leave_penalty * sim.left_weight,
