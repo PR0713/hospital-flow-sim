@@ -22,6 +22,10 @@ plot = ["matplotlib>=3.8"]
 mcp = ["mcp>=1.2,<2"]
 # LLM agent (src/hospital_sim_agents)
 llm = ["anthropic>=1.0"]
+# Graph adapter (hospital_sim.env.pyg.to_hetero_data); imported lazily
+gnn = ["torch>=2.2", "torch_geometric>=2.5"]
+# Learnability smoke test (benchmarks/ppo_smoke.py): MaskablePPO
+rl = ["torch>=2.2", "stable-baselines3>=2.3", "sb3-contrib>=2.3", "tensorboard>=2.14"]
 dev = [
     "matplotlib>=3.8",
     "scipy-stubs",
@@ -56,3 +60,8 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# Optional extras without type information (imported lazily).
+module = ["torch_geometric", "torch_geometric.*"]
+ignore_missing_imports = true
