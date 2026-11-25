@@ -77,6 +77,8 @@ of the simulator, environment and benchmark. Observation schema version 1
 - `benchmarks/ppo_smoke.py`: MaskablePPO learnability smoke test on T1 and T2
   (extra `[rl]`), with learning curves and test-seed results in
   `docs/BASELINE_RESULTS_v0.1.md`.
+- Throughput baseline per tier (env, pointer wrapper, bare simulator) in
+  `docs/BASELINE_RESULTS_v0.1.md`, from `benchmarks/run_v01_throughput.py`.
 - `Simulator.idle_until`, `Simulator.overtime_so_far`.
 
 ### Changed

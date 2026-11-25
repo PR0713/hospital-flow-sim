@@ -1,0 +1,39 @@
+{
+ "machine": "Apple M4 (Darwin arm64)",
+ "python": "3.12.13",
+ "steps": 10000,
+ "rows": [
+  {
+   "tier": "T1",
+   "env_steps": 4370.6529297104225,
+   "env_decisions": 3218.985882731726,
+   "pointer_steps": 3861.8450678915474,
+   "pointer_decisions": 2825.7120361762454,
+   "bare_decisions": 44395.32913949234
+  },
+  {
+   "tier": "T2",
+   "env_steps": 4094.8839902873824,
+   "env_decisions": 2670.6833384654306,
+   "pointer_steps": 3648.623731307992,
+   "pointer_decisions": 2387.65936976795,
+   "bare_decisions": 29369.976367532086
+  },
+  {
+   "tier": "T3",
+   "env_steps": 3933.5778669533192,
+   "env_decisions": 2513.162899196476,
+   "pointer_steps": 3488.6229399848467,
+   "pointer_decisions": 2216.6710160663715,
+   "bare_decisions": 26174.92830225382
+  },
+  {
+   "tier": "T4",
+   "env_steps": 3208.675488456425,
+   "env_decisions": 2144.0369613865832,
+   "pointer_steps": 2954.5226943383677,
+   "pointer_decisions": 1969.189375776522,
+   "bare_decisions": 26190.329634974063
+  }
+ ]
+}

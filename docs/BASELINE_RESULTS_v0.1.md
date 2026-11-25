@@ -247,3 +247,14 @@ Paired difference on the test seeds, episode cost: PPO − random +76 ± 70; PPO
 - Non-finite observation cells: 0 per training episode (worst window).
 
 ![T2 learning curve](figures/v0.1/ppo_T2_noshuffle.png)
+
+## Throughput baseline
+
+Single process, Apple M4 (Darwin arm64), Python 3.12.13, 10,000 steps per row under a random masked policy (`action_space.sample()`), resets included. *env steps/s* counts every step (starts and waits); *decisions/s* counts starts only. The bare simulator runs FIFO dispatch with first-idle teams and no observation, instance generation included. Measured with `benchmarks/run_v01_throughput.py`; compare later optimisations against these rows on the same machine.
+
+| Tier | env steps/s | env decisions/s | pointer wrapper steps/s | pointer decisions/s | bare simulator decisions/s |
+|---|---|---|---|---|---|
+| T1 | 4,371 | 3,219 | 3,862 | 2,826 | 44,395 |
+| T2 | 4,095 | 2,671 | 3,649 | 2,388 | 29,370 |
+| T3 | 3,934 | 2,513 | 3,489 | 2,217 | 26,175 |
+| T4 | 3,209 | 2,144 | 2,955 | 1,969 | 26,190 |
