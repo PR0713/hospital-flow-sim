@@ -44,6 +44,7 @@ INFO_KEYS = frozenset(
         "time",
         "episode_index",
         "observation_schema",
+        "observation_schema_version",  # same value; the name used from v0.1 on
         "n_resamples",
         "action_mask",
         "invalid_action",
@@ -255,6 +256,7 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
         info = self._info()
         info["n_resamples"] = resamples
         info["observation_schema"] = OBSERVATION_SCHEMA_VERSION
+        info["observation_schema_version"] = OBSERVATION_SCHEMA_VERSION
         return self._observation, info
 
     # --- step ----------------------------------------------------------------

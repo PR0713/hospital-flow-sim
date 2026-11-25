@@ -6,7 +6,7 @@ this project. For a shorter starting point see `docs/RL_INTEGRATION.md`; for
 scenario files see `docs/CONFIG_GUIDE.md`.
 
 **Observation schema version: 1** (`hospital_sim.env.OBSERVATION_SCHEMA_VERSION`,
-also `info["observation_schema"]` at reset). It changes whenever a field is
+also `info["observation_schema_version"]` at reset). It changes whenever a field is
 added, removed, reordered or changes meaning.
 
 **Not validated against real data.** The simulator's mechanics are tested;
@@ -357,7 +357,8 @@ tighter arrays.
 ## `info`
 
 Only these keys ever appear: `time`, `episode_index`, `action_mask`,
-`nonfinite_obs_count`, `n_resamples` and `observation_schema` (from `reset`),
+`nonfinite_obs_count`, `n_resamples`, `observation_schema` and
+`observation_schema_version` (the same value; from `reset`),
 `invalid_action`, `truncation_reason`, and, on the last step, `episode` with
 `terminated`, `truncated`, `time`, `makespan`, `patients_finished`,
 `unfinished_patients`, `total_flow_time`, `total_weighted_flow_time`,

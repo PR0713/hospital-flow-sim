@@ -1,0 +1,87 @@
+# Changelog
+
+All notable changes. Format based on Keep a Changelog; versions follow
+semantic versioning. The observation schema version is tracked separately
+(`OBSERVATION_SCHEMA_VERSION`, reported at reset).
+
+## [0.1.0] - 2026-11-26
+
+First release for parallel algorithm development: a stable, tested baseline
+of the simulator, environment and benchmark. Observation schema version 1
+(layout unchanged from the pre-release code). Decisions are logged in
+`docs/ASSUMPTIONS.md` (entries R1-R10 and later).
+
+### Fixed
+
+- **Truncated episodes were scored as if complete.** The evaluation harness
+  and `info["episode"]` counted finished patients only, so an agent that
+  waited until truncation scored zero flow time. Every flow and wait metric
+  now counts patients still in the system with the time they have spent so
+  far (`sim.metrics.episode_outcome`). Values for completed episodes are
+  unchanged.
+- **A departed patient's pure-delay operation started after they left.**
+  Withdrawing a patient (left unseen, or no-show) now cancels all of their
+  open operations before releasing anything, so no successor of theirs can
+  become ready or start. This had produced NaN in `obs["patients"]` and
+  inflated flow times on configs with patience.
+- **Wait could be a valid no-op.** With arrivals over time but no rosters or
+  breakdowns, wait stayed valid once nothing was scheduled and did nothing
+  until truncation. Wait is now offered only for public reasons that
+  something can still happen, and it always lets time pass. It never
+  reveals whether an arrival is still to come.
+- **`gymnasium.utils.env_checker.check_env` failed on the default config.**
+  It now passes; see "Changed" for the action space.
+- `tests/test_performance.py` no longer writes to the tracked
+  `benchmarks/history.csv`; it logs to the gitignored
+  `benchmarks/history.local.csv` (or `$HOSPITAL_SIM_BENCH_HISTORY`).
+- `test_empty_episodes_are_resampled_and_counted` was flaky (about 1% of
+  runs) because of an unseeded reset; now seeded.
+
+### Added
+
+- `info["episode"]`: `truncated`, `unfinished_patients`,
+  `unfinished_flow_time`, `unfinished_weighted_flow_time`, `truncation_cost`.
+- Harness metrics `truncated`, `unfinished`, `unfinished_flow_time`,
+  `unfinished_weighted_flow_time`; `Evaluation.truncation_rate()`; every
+  `Evaluation.table()` ends with a `truncated` column.
+- `EnvConfig.truncation_cost`: `"none"` (default) or `"expected_remaining"`,
+  a final reward term at truncation (a public lower bound on the remaining
+  cost) for learners that treat truncation as terminal.
+- Non-finite guard in the observation builder: `info["nonfinite_obs_count"]`
+  plus one logged warning; `NonFiniteObservationError` in debug mode.
+- New invariant: a withdrawn patient has no live operation.
+- `MaskedDiscrete` action space: `env.action_space.sample()` draws a valid
+  action.
+- `gym.make("SchedSim-v0", scenario=..., **EnvConfig fields)`, registered on
+  `import hospital_sim` (`"hospital_sim:SchedSim-v0"` in subprocess workers).
+- `PointerActionWrapper`: optional pointer-style actions over the valid
+  (operation, rule) pairs, with candidate features and a seeded per-step
+  shuffle.
+- `hospital_sim.env.pyg.to_hetero_data(env.graph())`: PyTorch Geometric
+  `HeteroData`, behind the new `[gnn]` extra. New `[rl]` extra
+  (stable-baselines3, sb3-contrib).
+- `info["observation_schema_version"]` at reset (the old
+  `info["observation_schema"]` key is kept).
+- `docs/RL_CONTRACT.md`: the semantics an RL algorithm can rely on.
+- `Simulator.idle_until`, `Simulator.overtime_so_far`.
+
+### Changed
+
+- **Interface:** `env.action_space` is a `MaskedDiscrete`, a `Discrete`
+  subclass with the same `n`, equality and pickling. `on_invalid_action`
+  still defaults to `"raise"`. One exception: an action equal to the last
+  `sample()` drawn for an earlier state (as `check_env` does around a reset)
+  runs the lowest valid action and sets `info["invalid_action"]`.
+- **Interface:** the wait mask. Wait is valid if an operation is running, a
+  resource is in turnover, the scenario has rosters or breakdowns, or an
+  arrival stream is not provably over (from public information). Previously,
+  any scenario with arrivals over time kept wait valid forever.
+- **Interface:** observation Boxes have per-column finite bounds where the
+  layout fixes them (flags, counts, acuity, roster cap, speeds, team sizes,
+  `scheduled_in`). Time columns stay unbounded above. Shapes, dtypes, order
+  and meaning are unchanged.
+- **Interface:** flow/wait metrics of *truncated* episodes (harness and
+  `info["episode"]`) include accrued cost, as described above.
+- Results on configs with patience move slightly, because of the
+  departed-patient fix. `docs/BASELINE_RESULTS.md` (pre-release) is kept as
+  generated; the v0.1 numbers are in `docs/BASELINE_RESULTS_v0.1.md`.
