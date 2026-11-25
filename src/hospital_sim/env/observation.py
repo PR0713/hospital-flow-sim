@@ -91,6 +91,69 @@ _COLUMNS = {
 }
 
 
+def feature_bounds(
+    *,
+    max_ops: int,
+    max_patients: int,
+    max_speed: float,
+    max_members: int,
+    min_scheduled_in: float,
+) -> dict[str, dict[str, tuple[float, float]]]:
+    """Per table, ``feature -> (low, high)`` as known from the layout.
+
+    Flags are in [0, 1], counts in [0, their maximum]; times and work amounts
+    are non-negative but unbounded above (``inf``). ``scheduled_in`` can be
+    negative (a late booked patient) down to ``min_scheduled_in``.
+    """
+    inf = float("inf")
+    flag, time, ops = (0.0, 1.0), (0.0, inf), (0.0, float(max_ops))
+    return {
+        "ops": {
+            **{name: flag for name in OP_FEATURES[:6]},
+            "expected_duration": time,
+            "waited": time,
+            "elapsed": time,
+            "expected_remaining": time,
+            "realized_duration": time,
+            "open_predecessors": ops,
+            "successors": ops,
+            "requires_patient": flag,
+            "expected_gated_work": time,
+        },
+        "patients": {
+            **{name: flag for name in PATIENT_FEATURES[:5]},
+            "weight": time,
+            "urgent": flag,
+            "acuity": (-1.0, 1.0),
+            "time_in_system": time,
+            "scheduled_in": (min_scheduled_in, inf),
+            "open_operations": ops,
+            "expected_remaining_work": time,
+            "busy": flag,
+        },
+        "resources": {
+            **{name: flag for name in RESOURCE_FEATURES[:6]},
+            "time_to_roster_change": (0.0, _ROSTER_CAP),
+            "expected_remaining": time,
+            "work_done": time,
+            "speed": (0.0, max_speed),
+        },
+        "roles": {
+            "idle": (0.0, float(max_members)),
+            "members": (0.0, float(max_members)),
+            "demand": time,
+        },
+        "global": {
+            "time": time,
+            "patients_in_system": (0.0, float(max_patients)),
+            "ready": ops,
+            "startable": ops,
+            "running": ops,
+            "consecutive_waits": flag,
+        },
+    }
+
+
 class NonFiniteObservationError(AssertionError):
     """Debug mode: the observation builder produced a NaN or infinite value."""
 
@@ -312,7 +375,8 @@ class ObservationBuilder:
                 resources=sim.resources,
             )
         )
-        return dist.expected_remaining(sim.now - sim.start_time[op])
+        # Never negative (guards against round-off at the tail).
+        return max(dist.expected_remaining(sim.now - sim.start_time[op]), 0.0)
 
     def remaining_flow_lower_bound(self) -> dict[int, float]:
         """Per patient in the system (engine id): a lower bound on the expected

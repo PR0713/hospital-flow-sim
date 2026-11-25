@@ -89,6 +89,30 @@ A masked action raises `InvalidActionError`. With
 `on_invalid_action="fallback"` the lowest valid action is executed instead
 and `info["invalid_action"]` is set.
 
+**Sampling.** `env.action_space` is a `MaskedDiscrete` (a `Discrete`
+subclass): `env.action_space.sample()` draws a currently valid action, so a
+random agent needs no mask handling. One exception to "masked raises": an
+action equal to what `sample()` returned for an *earlier* state (sampled,
+then `reset`, then stepped, as `gymnasium.utils.env_checker.check_env` does)
+runs the lowest valid action and sets `info["invalid_action"]`. With this,
+`check_env(HospitalEnv(EnvConfig(scenario)))` passes with the default
+config. Its remaining warnings are expected: time-valued observation
+columns are unbounded above, and there are no render modes.
+
+**Bounds.** Observation Boxes have per-column bounds: flags in [0, 1],
+counts in [0, their padding size], times and amounts of work in [0, inf),
+`acuity` in [-1, 1], `scheduled_in` from minus the longest no-show timeout.
+
+**`gym.make`.** `import hospital_sim` registers `SchedSim-v0`:
+`gym.make("SchedSim-v0", scenario=..., **EnvConfig fields)`, where
+`scenario` is a `Scenario`, a YAML/JSON path, a benchmark tier name
+(`"T1"`..`"T4"`) or a config name from `configs/` (default
+`"example_hospital_dynamic"`). Named scenarios need a source checkout. In
+worker processes (`AsyncVectorEnv`, `SubprocVecEnv`) use the id
+`"hospital_sim:SchedSim-v0"`, which imports the package in the worker.
+Wrappers added by `gym.make` do not forward `action_masks`; use
+`env.unwrapped.action_masks()` or `info["action_mask"]`.
+
 ### Waiting limits
 
 | Limit | Config | Default |

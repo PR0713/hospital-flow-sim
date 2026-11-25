@@ -26,8 +26,10 @@ from hospital_sim.env.observation import (
     RESOURCE_FEATURES,
     ROLE_FEATURES,
     ObservationBuilder,
+    feature_bounds,
 )
 from hospital_sim.env.rewards import REWARDS, Reward
+from hospital_sim.env.spaces import MaskedDiscrete
 from hospital_sim.generators.instance import generate_instance
 from hospital_sim.sim.allocation import RULES
 from hospital_sim.sim.durations import StandardDurationModel
@@ -69,6 +71,7 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
 
     metadata = {"render_modes": []}
     observation_schema_version = OBSERVATION_SCHEMA_VERSION
+    action_space: MaskedDiscrete
 
     def __init__(self, config: EnvConfig) -> None:
         self.config = config
@@ -109,27 +112,53 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
         n_rules = len(self._rules)
         self.wait_action = self.max_ops * n_rules if config.allow_wait else None
         self.n_actions = self.max_ops * n_rules + int(config.allow_wait)
-        self.action_space = spaces.Discrete(self.n_actions)
+        # ``sample()`` draws a currently valid action (see env/spaces.py).
+        self.action_space = MaskedDiscrete(self.n_actions)
 
         n_res, n_roles = len(scenario.resources), len(scenario.roles)
         n_types = len(scenario.operation_types)
 
-        def table(rows: int, columns: int) -> spaces.Box:
-            return spaces.Box(-np.inf, np.inf, (rows, columns), np.float32)
+        scheduled = [a for a in scenario.arrivals if a.kind is ArrivalKind.SCHEDULED]
+        bounds = feature_bounds(
+            max_ops=self.max_ops,
+            max_patients=self.max_patients,
+            max_speed=max(float(r.attributes.get("speed", 1.0)) for r in scenario.resources),
+            max_members=max(len(m) for m in scenario.resources_by_role.values()),
+            min_scheduled_in=-max((a.no_show_timeout for a in scheduled), default=0.0)
+            / self.time_scale,
+        )
+
+        def table(rows: int, name: str, features: tuple[str, ...]) -> spaces.Box:
+            low = np.array([bounds[name][f][0] for f in features], dtype=np.float32)
+            high = np.array([bounds[name][f][1] for f in features], dtype=np.float32)
+            return spaces.Box(
+                np.tile(low, (rows, 1)), np.tile(high, (rows, 1)), dtype=np.float32
+            )
+
+        max_quantity = max(
+            (req.quantity for t in scenario.operation_types for req in t.requirements),
+            default=0,
+        )
 
         obs_spaces: dict[str, spaces.Space[Any]] = {
-            "ops": table(self.max_ops, len(OP_FEATURES)),
+            "ops": table(self.max_ops, "ops", OP_FEATURES),
             "op_valid": spaces.Box(0, 1, (self.max_ops,), np.int8),
             "op_type": spaces.Box(-1, n_types - 1, (self.max_ops,), np.int32),
             "op_patient": spaces.Box(-1, self.max_patients - 1, (self.max_ops,), np.int32),
-            "op_requirements": table(self.max_ops, n_roles),
-            "patients": table(self.max_patients, len(PATIENT_FEATURES)),
+            "op_requirements": spaces.Box(
+                0.0, float(max_quantity), (self.max_ops, n_roles), np.float32
+            ),
+            "patients": table(self.max_patients, "patients", PATIENT_FEATURES),
             "patient_valid": spaces.Box(0, 1, (self.max_patients,), np.int8),
-            "resources": table(n_res, len(RESOURCE_FEATURES)),
+            "resources": table(n_res, "resources", RESOURCE_FEATURES),
             "resource_roles": spaces.Box(0, 1, (n_res, n_roles), np.int8),
             "resource_op": spaces.Box(-1, self.max_ops - 1, (n_res,), np.int32),
-            "roles": table(n_roles, len(ROLE_FEATURES)),
-            "global": spaces.Box(-np.inf, np.inf, (len(GLOBAL_FEATURES),), np.float32),
+            "roles": table(n_roles, "roles", ROLE_FEATURES),
+            "global": spaces.Box(
+                np.array([bounds["global"][f][0] for f in GLOBAL_FEATURES], dtype=np.float32),
+                np.array([bounds["global"][f][1] for f in GLOBAL_FEATURES], dtype=np.float32),
+                dtype=np.float32,
+            ),
         }
         if config.observation == "graph":
             obs_spaces["precedence_edges"] = spaces.Box(
@@ -238,7 +267,12 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
         action = int(action)
         invalid = not (0 <= action < self._mask.size and self._mask[action])
         if invalid:
-            if self.config.on_invalid_action == "raise":
+            # An action drawn by ``action_space.sample()`` for an earlier state
+            # (sampled, then reset, then stepped - as gymnasium's check_env
+            # does) is not an agent error: run the lowest valid action. Any
+            # other masked action raises in the default mode.
+            stale = self.action_space.is_stale_sample(action)
+            if self.config.on_invalid_action == "raise" and not stale:
                 raise InvalidActionError(f"action {action} is masked")
             action = int(np.flatnonzero(self._mask)[0])
 
@@ -345,6 +379,7 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
             if self.wait_action is not None:
                 mask[self.wait_action] = self._wait_is_valid()
         self._mask = mask
+        self.action_space.set_valid(mask)
 
     def _wait_is_valid(self) -> bool:
         """Waiting can change something, for a reason the agent can know:
