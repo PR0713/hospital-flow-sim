@@ -72,6 +72,7 @@ class HospitalEnv(gym.Env[dict[str, Any], Any]):
     metadata = {"render_modes": []}
     observation_schema_version = OBSERVATION_SCHEMA_VERSION
     action_space: MaskedDiscrete
+    observation_space: spaces.Dict
 
     def __init__(self, config: EnvConfig) -> None:
         self.config = config

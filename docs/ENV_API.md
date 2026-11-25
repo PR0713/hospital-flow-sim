@@ -123,6 +123,28 @@ Wrappers added by `gym.make` do not forward `action_masks`; use
 Reaching either ends the episode with `truncated=True` (not `terminated`)
 and `info["truncation_reason"]` set to the limit's name.
 
+### Pointer actions (optional wrapper)
+
+`PointerActionWrapper(env, max_candidates=128, shuffle_candidates=True,
+keep_base_observation=True)` replaces the padded action with an index into
+the list of currently valid (operation, rule) pairs: actions `0..K-1` pick a
+candidate, action `K` waits. The observation gains
+`candidate_features [K, F]` (the candidate's operation row, its patient row,
+its requirement vector and a one-hot of its rule; names in
+`wrapper.feature_names`), `candidate_mask [K+1]` (wait last; also
+`wrapper.action_masks()` and `info["action_mask"]`), `candidate_slot`,
+`candidate_rule` and `candidate_op_type` (`-1` padding).
+`keep_base_observation=False` keeps only `global` plus the candidate arrays.
+
+*Ordering:* oldest-ready first (largest `waited`, then row, then rule). If
+more than `K` pairs are valid the `K` oldest are kept and
+`info["candidates_dropped"]` counts the rest (the most observed in the
+shipped configs is 30). With `shuffle_candidates=True` (default) the kept
+candidates are then permuted at every step, seeded by `reset(seed)`, so a
+policy cannot exploit position; with `False`, candidate 0 is the FIFO choice.
+The base mask is in `info["base_action_mask"]`. The base environment is
+unchanged.
+
 ## Observation
 
 A `Dict` of fixed-shape arrays. Rows beyond the valid ones are zero (or `-1`
