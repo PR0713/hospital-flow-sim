@@ -193,3 +193,57 @@ Leave penalty 869 min × weight. Best heuristic in bold; paired gap of the best 
 ![T4 Gantt chart](figures/v0.1/gantt_T4.png)
 
 *T4: Gantt chart of `urgent_first+flexible` on the first test instance (one row per resource; colour = operation type; label = patient).*
+
+## Learnability smoke test (MaskablePPO)
+
+Not a tuned agent: the aim is to show that the environment is learnable and that the learner finds no way around the cost. Setup, budget and curves are below; evaluation is on the same 200 test seeds as the heuristics, through the harness.
+
+- sb3-contrib MaskablePPO, `MultiInputPolicy` MLP [256, 256], 8 subprocess envs on the `train` split, `PointerActionWrapper` (K = 32, shuffled candidates, compact observation: candidate features + global), VecNormalize on observations and rewards.
+- gamma = 1 (see docs/RL_CONTRACT.md), GAE lambda 0.95, n_steps 512 per env, batch 512, 10 epochs, lr 3e-4, entropy 0.01, clip 0.2, seed 0; default `truncation_cost='none'`, SB3 bootstraps on `truncated`.
+- Budget fixed in environment steps; wall time measured on this machine (Apple M-series laptop, CPU only). Evaluation is deterministic (argmax).
+
+**Findings.**
+
+- **No reward exploit was found.** The undiscounted return equals minus the scaled episode cost to within 2e-13 on every logged training episode. No training or test episode was truncated, no observation was non-finite, and T1/T2 have no patience, so there are no leavers. When the policy waits more, its own training cost goes *up*: waiting is not a way around the cost.
+- **The environment is learnable, but this stock setup does not hold on to it.** On the 20 eval seeds the learning curves use, the best T2 checkpoints reached episode costs of 2972 (shuffled) and 2996 (unshuffled), against 3167 for `random+flexible` and 2900 for `weight_aware+flexible`. The best T1 checkpoint reached 3469, against 3488 and 3435: T1 leaves almost no room between random and the best rule. All three runs then drift back. The wait share rises late in training (T2: from about 15% to 25–35%), and the *final* checkpoints, which are what the test numbers below evaluate, land at about random (T1) or worse than random (T2).
+- **Likely causes** (not investigated further, within the 30–60 minute budget): the script keeps the last checkpoint instead of the best one on eval seeds; γ = 1 with reward normalization on long, variable-length episodes; and a flat MLP over a padded candidate list, which must learn the same scoring once per position. Turning off the candidate shuffle (diagnostic run) did not change the picture.
+- **Suggestions for the algorithm developer:** select checkpoints on the eval seeds; use a per-candidate scoring network (shared MLP or GNN over candidates, logits = scores) instead of a flat MLP; and tune the learning rate, entropy schedule and value scaling.
+
+| Tier | candidates | budget (env steps) | wall time | trained policy: episode cost | random+flexible | best heuristic | truncated | wait share | leavers |
+|---|---|---|---|---|---|---|---|---|---|
+| T1 | shuffled | 2,002,944 | 16 min | 3625 ± 123 | 3653 ± 127 | 3522 ± 122 (`weight_aware+flexible`) | 0% | 13.2% | 0.00 |
+| T2 | shuffled | 3,002,368 | 24 min | 3381 ± 330 | 3236 ± 329 | 2975 ± 284 (`weight_aware+flexible`) | 0% | 28.0% | 0.00 |
+| T2 | unshuffled | 1,200,128 | 10 min | 3312 ± 338 | 3236 ± 329 | 2975 ± 284 (`weight_aware+flexible`) | 0% | 36.9% | 0.00 |
+
+### T1, shuffled candidates (default)
+
+Paired difference on the test seeds, episode cost: PPO − random -28 ± 32; PPO − best heuristic +103 ± 28. Weighted mean flow: PPO 362.5 ± 12.3, random 365.3 ± 12.7, best heuristic 352.2 ± 12.2.
+
+- Reward bookkeeping: largest |return + scaled cost| over logged training episodes 5.7e-14 (the undiscounted return equals minus the scaled episode cost).
+- Truncation: at most 0.0% of training episodes in any logging window; 0% of test episodes.
+- Wait action: 13.2% of the trained policy's test decisions.
+- Non-finite observation cells: 0 per training episode (worst window).
+
+![T1 learning curve](figures/v0.1/ppo_T1.png)
+
+### T2, shuffled candidates (default)
+
+Paired difference on the test seeds, episode cost: PPO − random +144 ± 68; PPO − best heuristic +406 ± 69. Weighted mean flow: PPO 222.1 ± 10.7, random 206.3 ± 10.2, best heuristic 192.0 ± 8.6.
+
+- Reward bookkeeping: largest |return + scaled cost| over logged training episodes 1.7e-13 (the undiscounted return equals minus the scaled episode cost).
+- Truncation: at most 0.0% of training episodes in any logging window; 0% of test episodes.
+- Wait action: 28.0% of the trained policy's test decisions.
+- Non-finite observation cells: 0 per training episode (worst window).
+
+![T2 learning curve](figures/v0.1/ppo_T2.png)
+
+### T2, unshuffled candidates
+
+Paired difference on the test seeds, episode cost: PPO − random +76 ± 70; PPO − best heuristic +338 ± 76. Weighted mean flow: PPO 213.0 ± 10.2, random 206.3 ± 10.2, best heuristic 192.0 ± 8.6.
+
+- Reward bookkeeping: largest |return + scaled cost| over logged training episodes 1.1e-13 (the undiscounted return equals minus the scaled episode cost).
+- Truncation: at most 0.0% of training episodes in any logging window; 0% of test episodes.
+- Wait action: 36.9% of the trained policy's test decisions.
+- Non-finite observation cells: 0 per training episode (worst window).
+
+![T2 learning curve](figures/v0.1/ppo_T2_noshuffle.png)

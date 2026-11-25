@@ -17,3 +17,6 @@ docs/PAPER_COMPARISON.md
 
 # Local benchmark log written by tests/test_performance.py
 benchmarks/history.local.csv
+
+# PPO smoke-test checkpoints (benchmarks/ppo_smoke.py)
+benchmarks/results/v0.1/models/

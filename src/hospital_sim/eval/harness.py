@@ -69,11 +69,18 @@ class EpisodeRecord:
 @dataclass(frozen=True)
 class EnvAgent:
     """An agent that acts through the environment: ``act(observation, mask)``
-    returns an action index. ``config`` must not use the train split."""
+    returns an action index. ``config`` must not use the train split.
+
+    ``wrapper``, if given, is applied to the environment before the agent
+    sees it (e.g. ``lambda env: PointerActionWrapper(env)``); the agent then
+    receives the wrapped observation and mask (``wrapped.action_masks()``)
+    and returns a wrapped action.
+    """
 
     name: str
     act: Callable[[dict[str, Any], np.ndarray], int]
     config: EnvConfig
+    wrapper: Callable[[HospitalEnv], Any] | None = None
 
 
 def record_episode(sim: Simulator) -> EpisodeRecord:
@@ -243,15 +250,16 @@ class Evaluation:
 def _run_env_agent(agent: EnvAgent, scenario: Scenario, instance: ProblemInstance) -> Simulator:
     if agent.config.split == "train":
         raise ValueError(f"agent '{agent.name}' uses a train-split env; evaluation refuses it")
-    env = HospitalEnv(agent.config)
+    base = HospitalEnv(agent.config)
+    env: Any = agent.wrapper(base) if agent.wrapper is not None else base
     observation, _ = env.reset(seed=0, options={"instance": instance})
     while True:
         observation, _, terminated, truncated, _ = env.step(
             agent.act(observation, env.action_masks())
         )
         if terminated or truncated:
-            assert env.sim is not None
-            return env.sim
+            assert base.sim is not None
+            return base.sim
 
 
 def instances_from_seeds(

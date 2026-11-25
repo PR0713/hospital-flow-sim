@@ -170,3 +170,32 @@ def test_wraps_a_gym_make_env() -> None:
     env = PointerActionWrapper(gym.make("hospital_sim:SchedSim-v0", scenario="example_hospital"))
     obs, _ = env.reset(seed=0)
     assert env.action_space.n == 129 and obs["candidate_mask"].any()
+
+
+def test_harness_evaluates_an_agent_through_the_wrapper() -> None:
+    from hospital_sim.eval import EnvAgent, evaluate
+
+    sc = scenario("example_hospital_dynamic")
+    config = EnvConfig(sc, split="eval")
+
+    def first_candidate(obs: dict[str, Any], mask: np.ndarray) -> int:
+        return 0 if mask[0] else len(mask) - 1  # oldest ready, ties by row; else wait
+
+    def same_on_base(obs: dict[str, Any], mask: np.ndarray) -> int:
+        starts = np.flatnonzero(mask[:-1])
+        if not len(starts):
+            return len(mask) - 1
+        waited = obs["ops"][starts, WAITED]
+        return int(starts[np.lexsort((starts, -waited))[0]])
+
+    through_wrapper = EnvAgent(
+        "pointer_first",
+        first_candidate,
+        config,
+        wrapper=lambda env: PointerActionWrapper(env, shuffle_candidates=False),
+    )
+    direct = EnvAgent("base_first", same_on_base, config)
+    result = evaluate(sc, [through_wrapper, direct], 4)
+    assert result.truncation_rate("pointer_first") == 0.0
+    for metric in ("makespan", "total_weighted_flow_time"):
+        assert (result.series("pointer_first", metric) == result.series("base_first", metric)).all()

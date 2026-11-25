@@ -161,7 +161,9 @@ patient complexity, future arrivals, future absences and breakdowns (only
 - **Evaluate only through `hospital_sim.eval.evaluate`.** It refuses the train
   split, runs every policy on the same instances (common random numbers) and
   reports paired differences with 95% CIs. An RL agent enters as
-  `EnvAgent(name, act(obs, mask) -> action, config)`.
+  `EnvAgent(name, act(obs, mask) -> action, config, wrapper=None)`; pass
+  `wrapper=lambda env: PointerActionWrapper(env)` for an agent trained on the
+  wrapper. `benchmarks/ppo_smoke.py` is a complete MaskablePPO example.
 - **Benchmark tiers** `T1`–`T4` (`benchmarks/tiers/`) ship fixed eval (100)
   and test (200) seed lists. Use `load_tier("T2")` and
   `evaluate(..., seeds=tier.test_seeds)`. Tune on eval, report on test.

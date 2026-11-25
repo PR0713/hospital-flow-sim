@@ -123,7 +123,9 @@ def _baselines(lines: list[str]) -> None:
 
 
 def _ppo(lines: list[str]) -> None:
-    runs = [r for t in TIERS if (r := _load(f"ppo_{t}.json"))]
+    runs = [
+        r for t in TIERS for tag in ("", "_noshuffle") if (r := _load(f"ppo_{t}{tag}.json"))
+    ]
     if not runs:
         return
     lines += [
@@ -136,14 +138,18 @@ def _ppo(lines: list[str]) -> None:
     ]
     first = runs[0]
     lines += [f"- {line}" for line in first["setup"]] + [""]
+    findings = RESULTS / "ppo_findings.md"
+    if findings.exists():  # hand-written interpretation of the runs below
+        lines += [findings.read_text().strip(), ""]
     lines += [
-        "| Tier | budget (env steps) | wall time | trained policy: episode cost | "
+        "| Tier | candidates | budget (env steps) | wall time | trained policy: episode cost | "
         "random+flexible | best heuristic | truncated | wait share | leavers |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in runs:
+        variant = r.get("variant", "shuffled candidates (default)").split(" candidates")[0]
         lines.append(
-            f"| {r['tier']} | {r['timesteps']:,} | {r['wall_minutes']:.0f} min | "
+            f"| {r['tier']} | {variant} | {r['timesteps']:,} | {r['wall_minutes']:.0f} min | "
             f"{_cell(r['ppo']['cost'], 0)} | {_cell(r['random']['cost'], 0)} | "
             f"{_cell(r['best_heuristic']['cost'], 0)} (`{r['best_heuristic']['name']}`) | "
             f"{100 * r['ppo']['truncation_rate']:.0f}% | {100 * r['ppo']['wait_share']:.1f}% | "
@@ -152,7 +158,7 @@ def _ppo(lines: list[str]) -> None:
     lines += [""]
     for r in runs:
         lines += [
-            f"### {r['tier']}",
+            f"### {r['tier']}, {r.get('variant', 'shuffled candidates (default)')}",
             "",
             "Paired difference on the test seeds, episode cost: PPO − random "
             f"{_gap(r['paired']['ppo_minus_random'])}; PPO − best heuristic "

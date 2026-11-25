@@ -1,0 +1,492 @@
+{
+ "tier": "T2",
+ "timesteps": 3002368,
+ "wall_minutes": 23.695109828483933,
+ "setup": [
+  "sb3-contrib MaskablePPO, `MultiInputPolicy` MLP [256, 256], 8 subprocess envs on the `train` split, `PointerActionWrapper` (K = 32, shuffled candidates, compact observation: candidate features + global), VecNormalize on observations and rewards.",
+  "gamma = 1 (see docs/RL_CONTRACT.md), GAE lambda 0.95, n_steps 512 per env, batch 512, 10 epochs, lr 3e-4, entropy 0.01, clip 0.2, seed 0; default `truncation_cost='none'`, SB3 bootstraps on `truncated`.",
+  "Budget fixed in environment steps; wall time measured on this machine (Apple M-series laptop, CPU only). Evaluation is deterministic (argmax)."
+ ],
+ "ppo": {
+  "cost": [
+   3380.5338995015,
+   329.64172423660665
+  ],
+  "weighted_mean_flow_time": [
+   222.1173298668833,
+   10.726418508111442
+  ],
+  "left": [
+   0.0,
+   0.0
+  ],
+  "truncation_rate": 0.0,
+  "wait_share": 0.2795977688742242
+ },
+ "random": {
+  "cost": [
+   3236.26285675144,
+   329.3403213774256
+  ],
+  "weighted_mean_flow_time": [
+   206.25085118066633,
+   10.15001906701218
+  ],
+  "left": [
+   0.0,
+   0.0
+  ],
+  "truncation_rate": 0.0
+ },
+ "best_heuristic": {
+  "cost": [
+   2974.548604110136,
+   283.7698404155447
+  ],
+  "weighted_mean_flow_time": [
+   192.0246947202342,
+   8.591884846508043
+  ],
+  "left": [
+   0.0,
+   0.0
+  ],
+  "truncation_rate": 0.0,
+  "name": "weight_aware+flexible"
+ },
+ "paired": {
+  "ppo_minus_random": [
+   144.27104275005928,
+   68.08947395976988
+  ],
+  "ppo_minus_best": [
+   405.98529539136393,
+   69.19663351259159
+  ]
+ },
+ "curve_points": [
+  {
+   "timesteps": 8.0,
+   "minutes": 0.08657703471641677,
+   "eval_cost": 4183.859238390827,
+   "eval_truncated": 0.0,
+   "train_cost": NaN,
+   "train_return": NaN,
+   "train_truncated": NaN,
+   "train_wait_share": NaN,
+   "train_left": NaN,
+   "train_return_gap": NaN,
+   "train_nonfinite": NaN
+  },
+  {
+   "timesteps": 100000.0,
+   "minutes": 0.9992208687491559,
+   "eval_cost": 3261.0178625068825,
+   "eval_truncated": 0.0,
+   "train_cost": 3524.8538282375516,
+   "train_return": -111.31117349,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.26216790538422013,
+   "train_left": 0.0,
+   "train_return_gap": 8.526512829121202e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 200000.0,
+   "minutes": 1.8533326083328574,
+   "eval_cost": 3166.705447483415,
+   "eval_truncated": 0.0,
+   "train_cost": 3371.4809008999127,
+   "train_return": -106.46781791000001,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.1939839122758812,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 300000.0,
+   "minutes": 2.690549472915397,
+   "eval_cost": 3276.8734962382864,
+   "eval_truncated": 0.0,
+   "train_cost": 3490.744700772053,
+   "train_return": -110.23404319000001,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.2164843219171452,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 400000.0,
+   "minutes": 3.5041969722156256,
+   "eval_cost": 3214.9396964960433,
+   "eval_truncated": 0.0,
+   "train_cost": 3105.386783573594,
+   "train_return": -98.06484576000001,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.21843661257628835,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 500000.0,
+   "minutes": 4.325417276382601,
+   "eval_cost": 3213.5874000407593,
+   "eval_truncated": 0.0,
+   "train_cost": 3401.9404189712204,
+   "train_return": -107.42969740000002,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.1840465109583792,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 600000.0,
+   "minutes": 5.065394677782509,
+   "eval_cost": 3071.848305808565,
+   "eval_truncated": 0.0,
+   "train_cost": 3615.5341383564346,
+   "train_return": -114.17476226,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.22805575899881558,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 700000.0,
+   "minutes": 5.772548702081743,
+   "eval_cost": 3237.8403380927066,
+   "eval_truncated": 0.0,
+   "train_cost": 3450.4678507680214,
+   "train_return": -108.96214268999998,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.2385936278575316,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 800000.0,
+   "minutes": 6.506644415966003,
+   "eval_cost": 3055.043367790837,
+   "eval_truncated": 0.0,
+   "train_cost": 3409.271099490007,
+   "train_return": -107.66119264,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.183000189145777,
+   "train_left": 0.0,
+   "train_return_gap": 8.526512829121202e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 900000.0,
+   "minutes": 7.2299703465328395,
+   "eval_cost": 3083.53659527363,
+   "eval_truncated": 0.0,
+   "train_cost": 3061.798105529242,
+   "train_return": -96.68836128999997,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.14192456676653037,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1000000.0,
+   "minutes": 7.967609544449563,
+   "eval_cost": 3214.0232665396693,
+   "eval_truncated": 0.0,
+   "train_cost": 2830.617048974773,
+   "train_return": -89.38790682000001,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.2002264642651263,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1100000.0,
+   "minutes": 8.686227191666452,
+   "eval_cost": 3110.484103880044,
+   "eval_truncated": 0.0,
+   "train_cost": 3152.0844746487123,
+   "train_return": -99.53950972000001,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.18925348556203597,
+   "train_left": 0.0,
+   "train_return_gap": 8.526512829121202e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1200000.0,
+   "minutes": 9.399078818049748,
+   "eval_cost": 3086.4576494081657,
+   "eval_truncated": 0.0,
+   "train_cost": 3146.5669266036357,
+   "train_return": -99.36527133000001,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.19585172923503183,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1300000.0,
+   "minutes": 10.133447774299809,
+   "eval_cost": 3141.523238667875,
+   "eval_truncated": 0.0,
+   "train_cost": 3226.3526248204435,
+   "train_return": -101.88481973000002,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.16581079261838397,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1400000.0,
+   "minutes": 10.816040109714958,
+   "eval_cost": 2971.788749096781,
+   "eval_truncated": 0.0,
+   "train_cost": 2958.6704075128982,
+   "train_return": -93.43169710000001,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.16171693928174996,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1500000.0,
+   "minutes": 11.63548189791618,
+   "eval_cost": 3158.449609278094,
+   "eval_truncated": 0.0,
+   "train_cost": 3520.819276876816,
+   "train_return": -111.18376669000001,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.2288538788678691,
+   "train_left": 0.0,
+   "train_return_gap": 8.526512829121202e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1600000.0,
+   "minutes": 12.460308597915962,
+   "eval_cost": 3201.1613688122857,
+   "eval_truncated": 0.0,
+   "train_cost": 3039.790171916925,
+   "train_return": -95.99337383000002,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.2263817092061437,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1700000.0,
+   "minutes": 13.2741794201332,
+   "eval_cost": 3126.1491118986532,
+   "eval_truncated": 0.0,
+   "train_cost": 3165.5220073932874,
+   "train_return": -99.96385288000002,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.1949119448930308,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1800000.0,
+   "minutes": 14.04890732570008,
+   "eval_cost": 3315.642727874279,
+   "eval_truncated": 0.0,
+   "train_cost": 3260.13686218807,
+   "train_return": -102.95169038,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.19321703082796376,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 1900000.0,
+   "minutes": 14.894966095833418,
+   "eval_cost": 3061.5750428449473,
+   "eval_truncated": 0.0,
+   "train_cost": 3126.5504064165657,
+   "train_return": -98.73317068,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.1921250755742553,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2000000.0,
+   "minutes": 15.73633144236519,
+   "eval_cost": 3164.3542975336213,
+   "eval_truncated": 0.0,
+   "train_cost": 3400.6166030779614,
+   "train_return": -107.38789273000002,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.2207915074958181,
+   "train_left": 0.0,
+   "train_return_gap": 1.7053025658242404e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2100000.0,
+   "minutes": 16.568221049998343,
+   "eval_cost": 3146.9669596494546,
+   "eval_truncated": 0.0,
+   "train_cost": 3600.5656229310516,
+   "train_return": -113.7020723,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.26363179789949376,
+   "train_left": 0.0,
+   "train_return_gap": 8.526512829121202e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2200000.0,
+   "minutes": 17.345341496532395,
+   "eval_cost": 3195.8181186679803,
+   "eval_truncated": 0.0,
+   "train_cost": 3113.2191246052043,
+   "train_return": -98.31218287000002,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.24759438240318132,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2300000.0,
+   "minutes": 18.13458544444875,
+   "eval_cost": 3304.9681774933388,
+   "eval_truncated": 0.0,
+   "train_cost": 3522.675203763405,
+   "train_return": -111.24237489000002,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.2750167091577365,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2400000.0,
+   "minutes": 18.931291061115918,
+   "eval_cost": 3136.6108489954977,
+   "eval_truncated": 0.0,
+   "train_cost": 3259.8705208057845,
+   "train_return": -102.94327962000003,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.25059173714812216,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2500000.0,
+   "minutes": 19.75449082638176,
+   "eval_cost": 3212.400825682199,
+   "eval_truncated": 0.0,
+   "train_cost": 3227.054766844336,
+   "train_return": -101.90699258,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.3027280419389291,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2600000.0,
+   "minutes": 20.556443692365427,
+   "eval_cost": 3228.099706429659,
+   "eval_truncated": 0.0,
+   "train_cost": 3649.8887374687965,
+   "train_return": -115.25964434000001,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.3423672335647133,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2700000.0,
+   "minutes": 21.360139957633024,
+   "eval_cost": 3209.3100662890365,
+   "eval_truncated": 0.0,
+   "train_cost": 2958.3397282789256,
+   "train_return": -93.42125454,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.30961639334612956,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2800000.0,
+   "minutes": 22.136423851382762,
+   "eval_cost": 3265.796029016138,
+   "eval_truncated": 0.0,
+   "train_cost": 3201.522258746741,
+   "train_return": -101.10070286999999,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.2570318138820787,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 2900000.0,
+   "minutes": 22.936874899999626,
+   "eval_cost": 3325.508185968664,
+   "eval_truncated": 0.0,
+   "train_cost": 2955.4694798853075,
+   "train_return": -93.33061510000002,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.33825963260622516,
+   "train_left": 0.0,
+   "train_return_gap": 8.526512829121202e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 3000000.0,
+   "minutes": 23.73738094861619,
+   "eval_cost": 3467.163003867942,
+   "eval_truncated": 0.0,
+   "train_cost": 3474.805323535267,
+   "train_return": -109.73069437999999,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.26436769926934117,
+   "train_left": 0.0,
+   "train_return_gap": 5.684341886080802e-14,
+   "train_nonfinite": 0.0
+  },
+  {
+   "timesteps": 3002368.0,
+   "minutes": 23.772968544450123,
+   "eval_cost": 3267.5550895439324,
+   "eval_truncated": 0.0,
+   "train_cost": 3480.2079501906082,
+   "train_return": -109.90130367999998,
+   "train_truncated": 0.0,
+   "train_wait_share": 0.26556457629989355,
+   "train_left": 0.0,
+   "train_return_gap": 1.1368683772161603e-13,
+   "train_nonfinite": 0.0
+  }
+ ],
+ "curve": "docs/figures/v0.1/ppo_T2.png",
+ "notes": [
+  "Reward bookkeeping: largest |return + scaled cost| over logged training episodes 1.7e-13 (the undiscounted return equals minus the scaled episode cost).",
+  "Truncation: at most 0.0% of training episodes in any logging window; 0% of test episodes.",
+  "Wait action: 28.0% of the trained policy's test decisions.",
+  "Non-finite observation cells: 0 per training episode (worst window)."
+ ]
+}
