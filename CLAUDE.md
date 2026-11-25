@@ -24,7 +24,7 @@ Python 3.11+. The venv is `.venv`; install with `.venv/bin/pip install -e ".[dev
 .venv/bin/python examples/evaluate_my_agent.py    # agent vs baselines, paired CIs
 ```
 
-Benchmark tests append to `benchmarks/history.csv`. `benchmarks/run_m4_studies.py` and `run_m5_studies.py` regenerate the result docs in `docs/`.
+Benchmark tests append to the gitignored `benchmarks/history.local.csv` (override with `HOSPITAL_SIM_BENCH_HISTORY`); the tracked `benchmarks/history.csv` is a frozen record. `benchmarks/run_m4_studies.py` and `run_m5_studies.py` regenerate the result docs in `docs/`.
 
 ## Architecture
 

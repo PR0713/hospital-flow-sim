@@ -14,3 +14,6 @@ docs/paper_notes/
 docs/PAPER_COMPARISON.md
 *.bib
 *.raw.txt
+
+# Local benchmark log written by tests/test_performance.py
+benchmarks/history.local.csv
