@@ -93,6 +93,7 @@ smoke runs, the sensitivity study, benchmarks). The benchmark tests append to
 | Document | Content |
 |---|---|
 | `docs/RL_INTEGRATION.md` | Start here to plug in an agent |
+| `docs/RL_CONTRACT.md` | What an RL algorithm can rely on: epochs, discounting, truncation, masks, seeds |
 | `docs/ENV_API.md` | Reference: actions, masks, observation fields, rewards, seeds |
 | `docs/CONFIG_GUIDE.md` | Every key of a scenario file |
 | `docs/BASELINE_RESULTS.md` | Baseline policies on the shipped configs |

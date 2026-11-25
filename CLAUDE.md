@@ -57,4 +57,4 @@ Layers, bottom to top (each depends only on the layers listed before it):
 
 ## Docs
 
-`docs/RL_INTEGRATION.md` (start here to plug in an agent), `docs/ENV_API.md` (actions, masks, observation fields, seeds), `docs/CONFIG_GUIDE.md`, `docs/BASELINE_RESULTS.md`, `docs/ASSUMPTIONS.md`.
+`docs/RL_INTEGRATION.md` (start here to plug in an agent), `docs/RL_CONTRACT.md` (semantics an algorithm relies on), `docs/ENV_API.md` (actions, masks, observation fields, seeds), `docs/CONFIG_GUIDE.md`, `docs/BASELINE_RESULTS.md`, `docs/ASSUMPTIONS.md`.

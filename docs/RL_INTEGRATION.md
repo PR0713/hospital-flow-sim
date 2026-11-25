@@ -1,7 +1,9 @@
 # Plugging an RL agent into the environment
 
 `docs/ENV_API.md` is the reference for spaces, masks, fields and rewards.
-This page is the shorter "how do I start, and what will trip me up".
+`docs/RL_CONTRACT.md` states the semantics an algorithm can rely on
+(decision epochs, discounting, bootstrapping, seeds); read it before
+training. This page is the shorter "how do I start, and what will trip me up".
 
 ## What this is, and what it does not claim
 
