@@ -12,11 +12,61 @@ unknown until an operation ends.
 This project contains the simulator, the environment, baseline policies and
 an evaluation harness. It contains no learning algorithm.
 
+## How the simulator works
+
+### What it models
+
+A small hospital unit over a day or more:
+
+- **Patients** arrive over time. Some are booked in advance, some turn up
+  unexpectedly. Some are urgent and count more.
+- **Each patient has a pathway:** a set of operations that must happen in a
+  certain order (for example assessment, then surgery, then recovery).
+- **Resources** are rooms, surgeons, anaesthetists and nurses.
+- **Each operation needs a whole team at the same moment** (for example a room,
+  a surgeon, an anaesthetist and a nurse). It can only start when all of them
+  are free.
+
+### Uncertainty
+
+How long an operation takes is **random**. The scheduler knows only the
+average and finds out the real duration when the operation finishes. Other
+surprises are also hidden until they happen: whether a patient turns up, staff
+absences, equipment breakdowns, and patients giving up and leaving.
+
+### How it runs
+
+It is an **event-driven simulation**: instead of ticking minute by minute, it
+jumps straight to the next moment where something happens.
+
+1. **Jump to the next event**, such as a patient arriving or an operation
+   finishing.
+2. **Check whether anything can start:** a patient's next operation is ready
+   and a full team is free.
+3. **If so, ask the scheduler.** The scheduler (a simple rule, or an AI agent)
+   picks which operation to start and which team to use, or chooses to
+   **wait**.
+4. **Start that operation.** The team is busy until it finishes.
+5. **Repeat** until every patient is done or has left.
+
+### How a schedule is scored
+
+The score is the **total time patients spend in the system**, with urgent
+patients weighted more, plus a penalty for each patient who leaves without
+being treated. Lower is better.
+
+### What it is for
+
+It is a **test ground for scheduling methods**, from simple rules such as
+"urgent patients first" to agents that learn by trial and error
+(reinforcement learning). Every method runs on exactly the same patients, so
+the comparison is fair.
+
 ## What it does not claim
 
 **The simulator has not been validated against real hospital data.** All
 parameters in `configs/` are illustrative. Its internal mechanics are tested
-(over 430 tests, including checks against queueing formulas and tests that
+(over 500 tests, including checks against queueing formulas and tests that
 hidden information cannot reach a policy), but that is correctness of the
 model as specified, not evidence that the model matches a hospital. Results
 obtained here are statements about these configs.
