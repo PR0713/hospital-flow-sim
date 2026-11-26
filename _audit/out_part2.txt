@@ -1,0 +1,24 @@
+
+=== throughput ===
+env example_hospital_dynamic/dict: 10000 steps in 4.27s -> 2342 steps/s, 1477 start-decisions/s, 134 episodes finished, obs ops-table shape=(468, 15)
+env example_hospital_dynamic/graph: 10000 steps in 3.78s -> 2648 steps/s, 1670 start-decisions/s, 134 episodes finished, obs ops-table shape=(468, 15)
+env example_hospital_full/graph: 10000 steps in 4.45s -> 2247 steps/s, 1437 start-decisions/s, 92 episodes finished, obs ops-table shape=(660, 15)
+env example_hospital_stress/graph: 10000 steps in 4.17s -> 2399 steps/s, 1563 start-decisions/s, 87 episodes finished, obs ops-table shape=(594, 15)
+bare Simulator example_hospital_dynamic: 10049 decisions in 0.67s -> 14939 decisions/s (213 episodes, incl. instance generation)
+bare Simulator example_hospital_stress: 10043 decisions in 0.57s -> 17598 decisions/s (131 episodes, incl. instance generation)
+
+=== state save/restore probes ===
+example_hospital: copy.deepcopy(env): OK
+example_hospital: pickle.dumps(env): OK
+example_hospital: copy.deepcopy(env.sim): OK
+example_hospital: deepcopy clone continues identically under the same actions: True
+example_hospital_dynamic: copy.deepcopy(env): FAILS with TypeError: cannot pickle 'generator' object
+example_hospital_dynamic: pickle.dumps(env): FAILS with TypeError: cannot pickle 'generator' object
+example_hospital_dynamic: copy.deepcopy(env.sim): FAILS with TypeError: cannot pickle 'generator' object
+
+=== replay a fixed instance under different policies ===
+{'first': ('3c1e1071279b8984', -15.774, 498.7972215357232), 'last': ('3c1e1071279b8984', -19.752, 624.5905705432306), 'random': ('3c1e1071279b8984', -17.616, 557.0439322318323)}
+
+=== gymnasium vector env ===
+SyncVectorEnv: reset+step OK; obs['ops'] shape (2, 468, 15); call('action_masks') shape (2, 469); info keys ['_action_mask', '_episode_index', '_time', 'action_mask', 'episode_index', 'time']...
+AsyncVectorEnv: reset+step OK; obs['ops'] shape (2, 468, 15); call('action_masks') shape (2, 469); info keys ['_action_mask', '_episode_index', '_time', 'action_mask', 'episode_index', 'time']...

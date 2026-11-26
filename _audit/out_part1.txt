@@ -1,0 +1,110 @@
+
+=== random masked policy: example_hospital_dynamic (graph, debug=True) ===
+action_space=Discrete(469), max_ops=468, max_patients=52, max_edges=1404, time_scale=31.62, leave_penalty=569.2
+ep 0: steps=75 waits=23 return=-181.63 (-potential*scale=-181.63) terminated=True truncated=False reason=None patients_finished=13 left=0 no_shows=0 makespan=1493 obs_in_space=True time_monotone=True mean_mask_density=0.0080 warnings=[]
+ep 1: steps=42 waits=14 return=-75.36 (-potential*scale=-75.36) terminated=True truncated=False reason=None patients_finished=6 left=0 no_shows=0 makespan=554 obs_in_space=True time_monotone=True mean_mask_density=0.0068 warnings=[]
+ep 2: steps=110 waits=39 return=-184.57 (-potential*scale=-184.57) terminated=True truncated=False reason=None patients_finished=15 left=0 no_shows=0 makespan=1603 obs_in_space=True time_monotone=True mean_mask_density=0.0069 warnings=[]
+
+=== random masked policy: example_hospital_full (graph, debug=True) ===
+action_space=Discrete(661), max_ops=660, max_patients=55, max_edges=1980, time_scale=48.13, leave_penalty=869.2
+ep 0: steps=97 waits=34 return=-126.66 (-potential*scale=-126.66) terminated=True truncated=False reason=None patients_finished=14 left=0 no_shows=1 makespan=1484 obs_in_space=True time_monotone=True mean_mask_density=0.0054 warnings=[]
+ep 1: steps=111 waits=36 return=-86.58 (-potential*scale=-86.58) terminated=True truncated=False reason=None patients_finished=17 left=0 no_shows=1 makespan=617 obs_in_space=True time_monotone=True mean_mask_density=0.0051 warnings=[]
+
+=== random masked policy: example_hospital_patience (graph, debug=True) ===
+action_space=Discrete(877), max_ops=876, max_patients=73, max_edges=2628, time_scale=48.13, leave_penalty=869.2
+ep 0: steps=104 waits=28 return=-311.60 (-potential*scale=-311.60) terminated=True truncated=False reason=None patients_finished=20 left=2 no_shows=1 makespan=1802 obs_in_space=False time_monotone=True mean_mask_density=0.0044 warnings=[]
+ep 1: steps=131 waits=33 return=-186.77 (-potential*scale=-186.77) terminated=True truncated=False reason=None patients_finished=27 left=3 no_shows=1 makespan=631 obs_in_space=False time_monotone=True mean_mask_density=0.0045 warnings=[]
+
+=== random masked policy: example_hospital (dict, debug=True) ===
+action_space=Discrete(81), max_ops=80, max_patients=10, max_edges=240, time_scale=33.75, leave_penalty=540.0
+ep 0: steps=54 waits=10 return=-75.98 (-potential*scale=-75.98) terminated=True truncated=False reason=None patients_finished=10 left=0 no_shows=0 makespan=488 obs_in_space=True time_monotone=True mean_mask_density=0.0706 warnings=[]
+ep 1: steps=66 waits=15 return=-105.44 (-potential*scale=-105.44) terminated=True truncated=False reason=None patients_finished=10 left=0 no_shows=0 makespan=666 obs_in_space=True time_monotone=True mean_mask_density=0.0647 warnings=[]
+
+=== check_env: example_hospital_dynamic / dict ===
+check_env raised InvalidActionError: action 444 is masked
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+check_env (default args) raised InvalidActionError: action 176 is masked
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+
+=== check_env: example_hospital_dynamic / graph ===
+check_env raised InvalidActionError: action 167 is masked
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+check_env (default args) raised InvalidActionError: action 44 is masked
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+
+=== check_env: example_hospital_full / graph ===
+check_env raised InvalidActionError: action 8 is masked
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+check_env (default args) raised InvalidActionError: action 328 is masked
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+  warning: UserWarning: [33mWARN: A Box observation space minimum value is -infinity. This is probably too low.[0m
+  warning: UserWarning: [33mWARN: A Box observation space maximum value is infinity. This is probably too high.[0m
+
+=== determinism ===
+example_hospital_dynamic: same seed identical=True (len 93, digest ff155546657be824); different seed differs=True (len 153); first reset obs equal across seeds=False
+example_hospital_full: same seed identical=True (len 243, digest a3acae513b0ec230); different seed differs=True (len 247); first reset obs equal across seeds=False
+generate_instance(seed=42) twice: patients equal=True, hidden equal=True
